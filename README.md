@@ -9,7 +9,7 @@ Yeah, it's converted. The Upsilon code, when passing by compiler, is converted t
 I like to teach a lot of nice guys around. But it's complex for him, because it I'm making this language, just for teaching easy (And for when I be tired to program in C++ (serious)).
 
 ### Okay, let's see it
-Wow, wait, I'm not finished the Upsilon (though I'm finishin). But I can show you some features.
+Wow, wait, I'm not finished the Upsilon (though I'm finishing). But I can show you some features.
 
 - It's high-level
   + Yeah, so easy to program, so natural to read, so beautiful.
