@@ -27,7 +27,7 @@ Wow, wait, I'm not finished the Upsilon (though I'm finishin). But I can show yo
   + Well, the functions' body are simple, not much complex, the language is not for large codes or whatever you think, it's to make good algorithms in the simple and better way.
 
 ### Documentation?
-... Ok, I'm not finished it too. It coming yet.
+... Ok, I'm not finished it too. It's coming yet.
 
 ## The license
 This project is lincensed under GPLv3 license, so you are free to do everything (or almost everything) with my language.
