@@ -5,7 +5,7 @@ So, what is Upsilon? You can say: "Oh, it might be just another programming lang
 ### What? Converted? Be more specific!
 Yeah, it's converted. The Upsilon code, when passing by compiler, is converted to an C++ code, and finally compiled. And, again, you say: "Oh, C++? This language is so powerful..." I did think the same.
 
-### Why do you making this language?
+### Why are you making this language?
 I like to teach a lot of nice guys around. But it's complex for him, because it I'm making this language, just for teaching easy (And for when I be tired to program in C++ (serious)).
 
 ### Okay, let's see it
