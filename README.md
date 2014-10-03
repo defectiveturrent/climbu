@@ -30,4 +30,4 @@ Wow, wait, I'm not finished the Upsilon (though I'm finishing). But I can show y
 ... Ok, I'm not finished it too. It's coming yet.
 
 ## The license
-This project is lincensed under GPLv3 license, so you are free to do everything (or almost everything) with my language.
+This project is lincensed under GPLv3, so you are free to do everything (or almost everything) with my language.
