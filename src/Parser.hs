@@ -333,19 +333,19 @@ parseHighExp tokens@( prefixToken : restTokens )
           (stat : rest) = restTokens -- Separates tokens in prefix, stat and rest
 
           functionIdent = parseFactor stat
-          arguments     = parseAllFactors . takeWhile (/=ASSIGN) $ rest
-          bodyFunction  = fst . parseHighExp . tail . dropWhile (/=ASSIGN) $ rest -- Remove Assign from head (tail)
+          arguments = parseAllFactors . takeWhile (/=ASSIGN) $ rest
+          (bodyFunction, rest2) = parseHighExp . tail . dropWhile (/=ASSIGN) $ rest -- Remove Assign from head (tail)
             
         in
-          (Def functionIdent arguments bodyFunction, [])
+          (Def functionIdent arguments bodyFunction, rest2)
 
       LAMBDA ->
         let
-          arguments     = parseAllFactors . takeWhile (/=ASSIGN) $ restTokens
-          bodyFunction  = fst . parseHighExp . tail . dropWhile (/=ASSIGN) $ restTokens -- Remove Assign from head (tail)
+          arguments = parseAllFactors . takeWhile (/=ASSIGN) $ restTokens
+          (bodyFunction, rest2) = parseHighExp . tail . dropWhile (/=ASSIGN) $ restTokens -- Remove Assign from head (tail)
 
         in
-          (LambdaDef arguments bodyFunction, [])
+          (LambdaDef arguments bodyFunction, rest2)
 
       otherstokens ->
         parseExp tokens
