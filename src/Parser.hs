@@ -276,8 +276,8 @@ parseFactors ((OPENKEYS):rest)
 parseFactors ((IF):rest)
   = let
       (stat, restStat) = parseHighExp rest
-      (thenStat, restThen) = parseHighExp restStat
-      (elseStat, restElse) = parseHighExp restThen
+      (Then thenStat, restThen) = parseHighExp restStat
+      (Else elseStat, restElse) = parseHighExp restThen
     
     in
       (Condition stat thenStat elseStat, restElse)
@@ -289,7 +289,7 @@ parseFactors ((THEN):rest)
       (stat, rest2) = parseHighExp rest
 
     in
-     (stat, rest2)
+     (Then stat, rest2)
 
 -- IF Expression
 --
@@ -298,7 +298,7 @@ parseFactors ((ELSE):rest)
       (stat, rest2) = parseHighExp rest
 
     in
-      (stat, rest2)
+      (Else stat, rest2)
 
 -- Parse end of
 parseFactors ((EOF):rest)
