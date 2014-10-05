@@ -63,6 +63,8 @@ data Ast
   | ComprehensionList [Ast]            -- ComprehensionList [DATES] // [1, 2, 3]
   | LambdaDef [Ast] Ast                -- LambdaDef [ARGS] BODY // {n = n + foo}
   | Call Ast [Ast]                     -- ID [ARGS]
+  | Then Ast
+  | Else Ast
   | Condition Ast Ast Ast              -- (Condition ast) (Then ast) (Else ast)
   | Eof
   deriving (Show, Read, Eq)
