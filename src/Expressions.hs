@@ -8,14 +8,17 @@ import Data.List
 -- Tokens data type
 --
 data Token
-  = CONST Float  -- Numbers, const variables, etc
+  = CONST Int  -- Numbers, const variables, etc
   | ID String  -- Variables, etc
+  | STRING String
   | PLUS
   | MINUS
   | MUL
   | DIV
   | GREATERTHAN
+  | GREATEREQUAL
   | LESSTHAN
+  | LESSEQUAL
   | EQUAL
   | MOD
   | ASSIGN
@@ -52,13 +55,16 @@ data Ast
   | Mul Ast Ast                        -- Times AST AST
   | Div Ast Ast                        -- Divides AST AST
   | Grt Ast Ast                        -- Greater Than AST AST
+  | Ge  Ast Ast                        -- Greater or equal AST AST
   | Let Ast Ast                        -- Less Than AST AST
+  | Le  Ast Ast                        -- Less or equal AST AST
   | Equ Ast Ast                        -- Equal AST AST
   | Mod Ast Ast                        -- Module AST AST
   | Each Ast Ast                       -- Each AST AST
   | CountList Ast Ast                  -- CountList Ast Ast // [0..9]
   | Ident String                       -- VAR
-  | Num Float                          -- NUMBER
+  | CharString String                  -- A string
+  | Num Int                            -- NUMBER
   | ParenthesesBlock Ast               -- ( )
   | ComprehensionList [Ast]            -- ComprehensionList [DATES] // [1, 2, 3]
   | LambdaDef [Ast] Ast                -- LambdaDef [ARGS] BODY // {n = n + foo}
