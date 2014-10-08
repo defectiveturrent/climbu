@@ -6,44 +6,61 @@ import Data.Maybe
 import Data.String.Utils
 import Expressions
 
-showCode :: String -> [Ast]
-showCode = map (parser) . translateCode . parseTokens
+parseEofs :: [Token] -> [Ast]
+parseEofs [] = []
+parseEofs tokens
+  = let
+      (pretokens, rest) = break (==EOF) tokens
+      (exptree, exprest) = parseHighExp pretokens
 
-translateCode :: [Token] -> [[Token]]
-translateCode code
-  = case dropWhile (==EOF) code of
-      [] -> []
+    in
+      if null exprest then
+        if null rest then
+          exptree : []
+        else
+          exptree : (parseEofs $ tail rest)
 
-      other ->
-        let
-          (token, restTokens)
-            = break (==EOF) other
-        in
-          token : translateCode restTokens
-
-parseTokens = tokenise . replace "\n" " "
+      else
+        error $ "\nWhoops, something wrong here:\n\t" ++ show exprest
 
 tokenise [] = []                    -- (end of input)
-tokenise ('/':'/':rest) = []          -- (comment)
+tokenise ('"':rest)
+  = let
+      (string, _:rest2) = break (=='"') rest
+
+    in
+      (STRING string) : tokenise rest2
+
+tokenise ('/':'/':rest)             -- (comments)
+  = let
+      (_, _:rest2) = break (=='\n') rest
+
+    in
+      tokenise rest2
+
 tokenise (' ':rest) = tokenise rest      -- (skip spaces)
-tokenise ('.':'.':rest) = COUNTLIST : tokenise rest
-tokenise ('.':rest) = EOF : tokenise rest
-tokenise ('+':rest) = PLUS : tokenise rest
-tokenise ('-':rest) = MINUS : tokenise rest
-tokenise ('*':rest) = MUL : tokenise rest
-tokenise ('/':rest) = DIV : tokenise rest
-tokenise ('%':rest) = MOD : tokenise rest
-tokenise ('>':rest) = GREATERTHAN : tokenise rest
-tokenise ('<':rest) = LESSTHAN : tokenise rest
-tokenise ('=':'=':rest) = EQUAL : tokenise rest
-tokenise ('=':rest) = ASSIGN : tokenise rest
-tokenise (',':rest) = COMMA : tokenise rest
 tokenise ('(':rest) = OPENPAREN : tokenise rest
 tokenise (')':rest) = CLOSEPAREN : tokenise rest
 tokenise ('[':rest) = OPENBRACKETS : tokenise rest
 tokenise (']':rest) = CLOSEBRACKETS : tokenise rest
 tokenise ('{':rest) = OPENKEYS : tokenise rest
 tokenise ('}':rest) = CLOSEKEYS : tokenise rest
+tokenise ('.':'.':rest) = COUNTLIST : tokenise rest
+tokenise ('+':rest) = PLUS : tokenise rest
+tokenise ('-':rest) = MINUS : tokenise rest
+tokenise ('*':rest) = MUL : tokenise rest
+tokenise ('/':rest) = DIV : tokenise rest
+tokenise ('%':rest) = MOD : tokenise rest
+tokenise ('>':'=':rest) = GREATEREQUAL : tokenise rest
+tokenise ('>':rest) = GREATERTHAN : tokenise rest
+tokenise ('<':'=':rest) = LESSEQUAL : tokenise rest
+tokenise ('<':rest) = LESSTHAN : tokenise rest
+tokenise ('=':'=':rest) = EQUAL : tokenise rest
+tokenise ('=':rest) = ASSIGN : tokenise rest
+tokenise (',':rest) = COMMA : tokenise rest
+
+tokenise ('a':'n':'d':' ':rest)
+  = EOF : tokenise rest
 
 tokenise ('e':'a':'c':'h':' ':rest)
   = EACH : tokenise rest
@@ -80,7 +97,7 @@ tokenise (ch:rest)
         (CONST n):(tokenise rest2)
 
 tokenise (ch:rest)
-  | isAlpha ch
+  | isName ch
     = let
         (n, rest2) = getname (ch:rest)
       in 
@@ -92,18 +109,20 @@ getname str
   = let
       getname' [] chs = (chs, [])
       getname' (ch : str) chs
-        | isAlpha ch = getname' str (chs++[ch])
+        | isName ch = getname' str (chs++[ch])
         | otherwise  = (chs, ch : str)
     in
       getname' str []
 
+isName ch
+  = isAlpha ch || ch == '_'
 
-convert :: [Char] -> (Float, [Char])
+convert :: [Char] -> (Int, [Char])
 convert str
   = let
       conv' [] n = (n, [])
       conv' (ch : str) n
-        | isDigit ch = conv' str ((n*10) + (read [ch] :: Float))
+        | isDigit ch = conv' str ((n*10) + (read [ch] :: Int))
         | otherwise  = (n, ch : str)
     in 
       conv' str 0
@@ -117,7 +136,7 @@ parser tokens
       if null rest then
         tree
       else
-        error "excess rubbish"
+        error $ "\nWhoops, something wrong here:\n\t" ++ show rest
 
 parseFactor :: Token -> Ast
 parseFactors :: [Token] -> (Ast, [Token])
@@ -126,6 +145,8 @@ parseFactors :: [Token] -> (Ast, [Token])
 parseFactors ((ID x):rest)
     = (Ident x, rest)
 
+parseFactors ((STRING str):rest)
+    = (CharString str, rest)
 
 -- Parse numbers
 parseFactors ((CONST x):rest)
@@ -392,11 +413,23 @@ parseExp tokens
         in
           ( Grt factortree subexptree, rest3 )
 
+      (GREATEREQUAL : rest2) ->
+        let
+          (subexptree, rest3) = parseHighExp rest2
+        in
+          ( Ge factortree subexptree, rest3 )
+
       (LESSTHAN : rest2) ->
         let
           (subexptree, rest3) = parseHighExp rest2
         in
           ( Let factortree subexptree, rest3 )
+
+      (LESSEQUAL : rest2) ->
+        let
+          (subexptree, rest3) = parseHighExp rest2
+        in
+          ( Le factortree subexptree, rest3 )
 
       (EQUAL : rest2) ->
         let
