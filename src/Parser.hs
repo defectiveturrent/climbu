@@ -24,6 +24,11 @@ parseEofs tokens
         error $ "\nWhoops, something wrong here:\n\t" ++ show exprest
 
 tokenise [] = []                    -- (end of input)
+tokenise (' ':rest) = tokenise rest      -- (skip spaces)
+tokenise ('\n':rest) = tokenise rest
+tokenise ('\r':rest) = tokenise rest
+tokenise ('\t':rest) = tokenise rest
+
 tokenise ('"':rest)
   = let
       (string, _:rest2) = break (=='"') rest
@@ -38,7 +43,6 @@ tokenise ('/':'/':rest)             -- (comments)
     in
       tokenise rest2
 
-tokenise (' ':rest) = tokenise rest      -- (skip spaces)
 tokenise ('(':rest) = OPENPAREN : tokenise rest
 tokenise (')':rest) = CLOSEPAREN : tokenise rest
 tokenise ('[':rest) = OPENBRACKETS : tokenise rest
@@ -58,36 +62,38 @@ tokenise ('<':rest) = LESSTHAN : tokenise rest
 tokenise ('=':'=':rest) = EQUAL : tokenise rest
 tokenise ('=':rest) = ASSIGN : tokenise rest
 tokenise (',':rest) = COMMA : tokenise rest
-
-tokenise ('a':'n':'d':' ':rest)
-  = EOF : tokenise rest
-
-tokenise ('e':'a':'c':'h':' ':rest)
-  = EACH : tokenise rest
-
-tokenise ('w':'i':'t':'h':' ':rest)
-  = WITH : tokenise rest
-
-tokenise ('i':'n':' ':rest)
+tokenise (':':rest)
   = CALLARGS : tokenise rest
 
-tokenise ('i':'f':' ':rest)
-  = IF : tokenise rest
+tokenise ('a':'n':'d':x:rest)
+  | not $ isName x = EOF : tokenise rest
 
-tokenise ('t':'h':'e':'n':' ':rest)
-  = THEN : tokenise rest
+tokenise ('w':'i':'t':'h':x:rest)
+  | not $ isName x =  WITH : tokenise rest
 
-tokenise ('e':'l':'s':'e':' ':rest)
-  = ELSE : tokenise rest
+tokenise ('i':'f':x:rest)
+  | not $ isName x =  IF : tokenise rest
 
-tokenise ('w':'h':'i':'l':'e':' ':rest)
-  = WHILE : tokenise rest
+tokenise ('t':'h':'e':'n':x:rest)
+  | not $ isName x =  THEN : tokenise rest
 
-tokenise ('f':'o':'r':' ':rest)
-  = FOR : tokenise rest
+tokenise ('e':'l':'s':'e':x:rest)
+  | not $ isName x =  ELSE : tokenise rest
 
-tokenise ('d':'e':'f':' ':rest)
-  = FUNC : tokenise rest
+tokenise ('f':'o':'r':x:rest)
+  | not $ isName x =  FOR : tokenise rest
+
+tokenise ('i':'n':x:rest)
+  | not $ isName x =  IN : tokenise rest
+
+tokenise ('w':'h':'e':'n':x:rest)
+  | not $ isName x =  WHEN : tokenise rest
+
+tokenise ('d':'e':'f':x:rest)
+  | not $ isName x =  FUNC : tokenise rest
+
+tokenise ('t':'a':'k':'e':x:rest)
+  | not $ isName x =  TAKE : tokenise rest
 
 tokenise (ch:rest)
   | isDigit ch
@@ -162,7 +168,7 @@ parseFactors ((OPENPAREN):rest)
               check (n, acc, (y:[]))
                 = case y of
                     OPENPAREN ->
-                      (n + 1, acc, [EOF]) -- ++ [y]
+                      (n + 1, acc ++ [y], [EOF]) -- ++ [y]
 
                     CLOSEPAREN ->
                       if n == 0 then
@@ -176,13 +182,13 @@ parseFactors ((OPENPAREN):rest)
               check (n, acc, (y:ys))
                 = case y of
                     OPENPAREN ->
-                      check (n + 1, (if n == 0 then acc ++ [y] else acc), ys) -- ++ [y]
+                      check (n + 1, acc ++ [y], ys) -- ++ [y]
 
                     CLOSEPAREN ->
                       if n == 0 then
                         (0, acc ++ [y], ys) -- ++ [y]
                         else
-                          check (n - 1, (if n == 0 then acc ++ [y] else acc), ys)
+                          check (n - 1, acc ++ [y], ys)
 
                     othertoken ->
                       check (n, acc ++ [y], ys)
@@ -321,6 +327,13 @@ parseFactors ((ELSE):rest)
     in
       (Else stat, rest2)
 
+parseFactors ((WHEN):rest)
+    = let
+        (stat, rest2) = parseHighExp rest
+
+      in
+        (When stat, rest2)
+
 -- Parse end of
 parseFactors ((EOF):rest)
     = (Eof, rest)
@@ -377,6 +390,33 @@ parseExp tokens
       (factortree, rest) = parseFactors tokens
     in
       case rest of
+      (FOR : rest2) ->
+        let
+          (var, rest3) = parseHighExp rest2
+
+        in
+          case rest3 of
+            (IN : rest4) ->
+              let
+                (range, rest5) = parseHighExp rest4
+              in
+                case rest5 of
+                  (WHEN : final) ->
+                    let
+                      (cond, finalrest) = parseHighExp final
+
+                      result = factortree
+                      counting = In var range
+                      condition = When cond
+                    in
+                      (For result counting condition, finalrest)
+
+                  other ->
+                    (For factortree (In var range) (When Void), other)
+
+            other ->
+              (factortree, other)
+
       (ASSIGN : rest2) -> 
         let
           (subexptree, rest3) = parseHighExp rest2
@@ -443,12 +483,6 @@ parseExp tokens
         in
           ( Mod factortree subexptree, rest3 )
 
-      (EACH : rest2) ->
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Each factortree subexptree, rest3 )
-
       (WITH : rest2) ->
         let
           (subexptree, rest3) = parseHighExp rest2
@@ -466,6 +500,12 @@ parseExp tokens
           (subexptree, rest3) = (parseAllFactors rest2, [])
         in
           ( Call factortree subexptree, rest3)
+
+      (TAKE : rest2) ->
+        let
+          (subexptree, rest3) = parseHighExp rest2
+        in
+          ( Take factortree subexptree, rest3 )
 
       -- Like an 'otherwise'
       othertokens -> (factortree, othertokens)
