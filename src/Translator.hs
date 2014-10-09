@@ -15,7 +15,7 @@ data Inst
   | PushString String
   | AssignTo Inst Inst
   | Operation String Inst Inst
-  | EachTo Inst Inst
+  | ForList Inst Inst Inst Inst   -- Var; Result; Ranges; Condition.
   | MakeCountList Inst Inst
   | MakeSimpleList [Inst]
   | Block Inst
@@ -23,14 +23,18 @@ data Inst
   | Function Inst [Inst] Inst     -- auto foo = [](auto a, auto b){ return a + b; }
   | Lambda [Inst] Inst            -- [](auto a, auto b){ }
   | CallFunction Inst [Inst]      -- foo (1, x, "Hey")
+  | DoTake Inst Inst              -- list take n
+  | TNothing
   | Error String                  -- For format errors
   deriving (Show, Read, Eq)
 
 
+parseAst (Void) = TNothing
 parseAst (Ident x) = PushVar x
 parseAst (CharString x) = PushString x
 parseAst (Num x) = PushConst (show x)
 parseAst (Assign e1 e2) = AssignTo (parseAst e1) (parseAst e2)
+parseAst (Take e1 e2) = DoTake (parseAst e1) (parseAst e2)
 
 parseAst (Add e1 e2) = Operation "+" (parseAst e1) (parseAst e2)
 parseAst (Sub e1 e2) = Operation "-" (parseAst e1) (parseAst e2)
@@ -44,7 +48,24 @@ parseAst (Equ e1 e2) = Operation "==" (parseAst e1) (parseAst e2)
 parseAst (Ge  e1 e2) = Operation ">=" (parseAst e1) (parseAst e2)
 parseAst (Le  e1 e2) = Operation "<=" (parseAst e1) (parseAst e2)
 
-parseAst (Each e1 e2) = EachTo (parseAst e1) (parseAst e2)
+parseAst (For e1 e2 e3)
+  = let
+      (In var range) = e2
+      (When condition) = e3
+
+      var' = parseAst var
+      result' = parseAst e1
+      range' = parseAst range
+      condition' = case condition of
+                    Void ->
+                      PushConst "true"
+
+                    other ->
+                      parseAst condition
+
+    in
+      ForList var' (Lambda [var'] result') range' (Lambda [var'] condition')
+
 parseAst (ComprehensionList [CountList e1 e2]) = MakeCountList (parseAst e1) (parseAst e2)
 
 -- Countlist error
@@ -68,9 +89,7 @@ parseAst (Condition stat thenStat elseStat) = MakeCondition (parseAst stat) (par
 --
 -- execute $ tokenise "def foo a = a * 2 and print with foo in 5"
 
-type Stack = [Token]
-
-execute :: Stack -> [String]
+execute :: [Token] -> [String]
 execute stack
   = let
       paragraphs :: [Ast]
@@ -94,13 +113,13 @@ translate inst
         "\"" ++ x ++ "\""
 
       AssignTo i1 i2 ->
-        (translate i1) ++ " = " ++ (translate i2)
+        "auto " ++ (translate i1) ++ " = " ++ (translate i2)
 
       Operation op i1 i2 ->
         (translate i1) ++ op ++ (translate i2)
 
-      EachTo lambda list ->
-        "eachlist(" ++ (translate lambda) ++ ", " ++ (translate list) ++ ")"
+      ForList var fresult range fcondition ->
+        "eachlist(" ++ (translate fresult) ++ ", " ++ (translate range) ++ ", " ++ (translate fcondition) ++ ")"
 
       MakeCountList min_ max_ ->
         "countlist(" ++ (translate min_) ++ ", " ++ (translate max_) ++ ")"
@@ -113,7 +132,7 @@ translate inst
 
       --"if(" ++ (translate statif) ++ "){" ++ (translate statthen) ++ ";}else{" ++ (translate statelse) ++ ";};"
       MakeCondition statif statthen statelse ->
-        "condition(" ++ (translate statif) ++ "," ++ (translate statthen) ++ "," ++ (translate statelse) ++ ")"
+        (translate statif) ++ "?" ++ (translate statthen) ++ ":" ++ (translate statelse)
 
       Function name args body ->
         let
@@ -124,13 +143,16 @@ translate inst
               "auto " ++ (translate name) ++ " = [](" ++ (intercalate "," $ map (\x -> "auto "++(translate x)) args) ++ "){ return " ++ (translate body) ++ "; }"
 
             else
-              "int main( int argc, char** argv){ return " ++ (translate body) ++ "; }"
+              "int main(int argc, char** argv){ return " ++ (translate body) ++ "; }"
 
       Lambda args body ->
         "[](" ++ (intercalate "," $ map (\x -> "auto "++(translate x)) args) ++ "){ return " ++ (translate body) ++ "; }"
 
       CallFunction name args ->
         (translate name) ++ "(" ++ (intercalate "," $ map translate args) ++ ")"
+
+      DoTake i1 i2 ->
+        (translate i1) ++ "[" ++ (translate i2) ++ "]"
 
       Error msg ->
         error msg
