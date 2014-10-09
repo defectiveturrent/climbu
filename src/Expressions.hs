@@ -22,7 +22,6 @@ data Token
   | EQUAL
   | MOD
   | ASSIGN
-  | EACH
   | WITH
   | COMMA
   | CALLARGS
@@ -40,7 +39,11 @@ data Token
   | ELSE
   | WHILE
   | FOR
+  | IN
+  | WHEN
   | FUNC
+  | TAKE
+  | VOID
   | EOF  -- End of line
   deriving (Show, Read, Eq)
 
@@ -60,7 +63,7 @@ data Ast
   | Le  Ast Ast                        -- Less or equal AST AST
   | Equ Ast Ast                        -- Equal AST AST
   | Mod Ast Ast                        -- Module AST AST
-  | Each Ast Ast                       -- Each AST AST
+  | Take Ast Ast                       -- list take n
   | CountList Ast Ast                  -- CountList Ast Ast // [0..9]
   | Ident String                       -- VAR
   | CharString String                  -- A string
@@ -72,5 +75,9 @@ data Ast
   | Then Ast
   | Else Ast
   | Condition Ast Ast Ast              -- (Condition ast) (Then ast) (Else ast)
+  | When Ast                           -- Simple condition
+  | In Ast Ast                         -- Simple operator, like each
+  | For Ast Ast Ast                    -- Specific comprehension list
+  | Void
   | Eof
   deriving (Show, Read, Eq)
