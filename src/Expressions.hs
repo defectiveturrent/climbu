@@ -11,6 +11,7 @@ data Token
   = CONST Int  -- Numbers, const variables, etc
   | ID String  -- Variables, etc
   | STRING String
+  | CHAR Char
   | PLUS
   | MINUS
   | MUL
@@ -25,6 +26,7 @@ data Token
   | WITH
   | COMMA
   | CALLARGS
+  | CALLALONE String
   | COMMENT
   | COUNTLIST
   | OPENPAREN
@@ -67,6 +69,7 @@ data Ast
   | CountList Ast Ast                  -- CountList Ast Ast // [0..9]
   | Ident String                       -- VAR
   | CharString String                  -- A string
+  | CharByte Char                      -- A character
   | Num Int                            -- NUMBER
   | ParenthesesBlock Ast               -- ( )
   | ComprehensionList [Ast]            -- ComprehensionList [DATES] // [1, 2, 3]
