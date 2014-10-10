@@ -49,6 +49,7 @@ tokenise ('[':rest) = OPENBRACKETS : tokenise rest
 tokenise (']':rest) = CLOSEBRACKETS : tokenise rest
 tokenise ('{':rest) = OPENKEYS : tokenise rest
 tokenise ('}':rest) = CLOSEKEYS : tokenise rest
+tokenise ('\'':x:'\'':rest) = CHAR x : tokenise rest
 tokenise ('.':'.':rest) = COUNTLIST : tokenise rest
 tokenise ('+':rest) = PLUS : tokenise rest
 tokenise ('-':rest) = MINUS : tokenise rest
@@ -62,11 +63,17 @@ tokenise ('<':rest) = LESSTHAN : tokenise rest
 tokenise ('=':'=':rest) = EQUAL : tokenise rest
 tokenise ('=':rest) = ASSIGN : tokenise rest
 tokenise (',':rest) = COMMA : tokenise rest
-tokenise (':':rest)
-  = CALLARGS : tokenise rest
+tokenise (':':rest) = CALLARGS : tokenise rest
 
 tokenise ('a':'n':'d':x:rest)
   | not $ isName x = EOF : tokenise rest
+
+tokenise ('c':'a':'l':'l':x:rest)
+  | not $ isName x
+  = let
+      (n, rest2) = getname rest
+    in 
+      (CALLALONE n) : tokenise rest2
 
 tokenise ('w':'i':'t':'h':x:rest)
   | not $ isName x =  WITH : tokenise rest
@@ -154,9 +161,14 @@ parseFactors ((ID x):rest)
 parseFactors ((STRING str):rest)
     = (CharString str, rest)
 
+parseFactors ((CHAR ch):rest)
+    = (CharByte ch, rest)
 -- Parse numbers
 parseFactors ((CONST x):rest)
     = (Num x, rest)
+
+parseFactors ((CALLALONE x):rest)
+    = (Call (Ident x) [], rest)
 
 -- Parse parentheses
 parseFactors ((OPENPAREN):rest)
@@ -348,7 +360,7 @@ parseAllFactors (CLOSEKEYS:_) = []
 parseAllFactors (EOF:_) = []
 parseAllFactors tokens
   = let
-      (ast, rest) = parseFactors tokens
+      (ast, rest) = parseHighExp tokens
 
     in
       ast : parseAllFactors rest
@@ -508,6 +520,7 @@ parseExp tokens
           ( Take factortree subexptree, rest3 )
 
       -- Like an 'otherwise'
-      othertokens -> (factortree, othertokens)
+      othertokens ->
+        (factortree, othertokens)
 
 
