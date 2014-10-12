@@ -61,6 +61,7 @@ tokenise ('>':rest) = GREATERTHAN : tokenise rest
 tokenise ('<':'=':rest) = LESSEQUAL : tokenise rest
 tokenise ('<':rest) = LESSTHAN : tokenise rest
 tokenise ('=':'=':rest) = EQUAL : tokenise rest
+tokenise ('/':'=':rest) = NOT : tokenise rest
 tokenise ('=':rest) = ASSIGN : tokenise rest
 tokenise (',':rest) = COMMA : tokenise rest
 tokenise (':':rest) = CALLARGS : tokenise rest
@@ -488,6 +489,12 @@ parseExp tokens
           (subexptree, rest3) = parseHighExp rest2
         in
           ( Equ factortree subexptree, rest3 )
+      
+      (NOT : rest2) ->
+        let
+          (subexptree, rest3) = parseHighExp rest2
+        in
+          ( Not factortree subexptree, rest3 )
 
       (MOD : rest2) ->
         let
