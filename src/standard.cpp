@@ -30,7 +30,8 @@ int print ( float msg )
   return cout << msg, 0;
 }
 
-template<class t> int print ( const vector<t>& list )
+template<class t>
+  int print ( const vector<t>& list )
 {
   print('[');
   for ( int i = 0; i < list.size(); ++i )
@@ -46,7 +47,8 @@ template<class t> int print ( const vector<t>& list )
 // PrintLn functions
 //
 
-template<class t> int println ( t msg )
+template<class t>
+  int println ( t msg )
 {
   print(msg);
   return print('\n');
@@ -56,7 +58,10 @@ template<class t> int println ( t msg )
 // Lists functions
 //
 
-template<class t, class function, class condition> vector<t> eachlist( function f, const vector<t> & list, condition d )
+template< class t,
+          class function,
+          class condition >
+  vector<t> eachlist( function f, const vector<t> & list, condition d )
 {
   vector<t> res;
   for ( auto l : list )
