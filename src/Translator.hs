@@ -45,6 +45,7 @@ parseAst (Grt e1 e2) = Operation ">" (parseAst e1) (parseAst e2)
 parseAst (Let e1 e2) = Operation "<" (parseAst e1) (parseAst e2)
 
 parseAst (Equ e1 e2) = Operation "==" (parseAst e1) (parseAst e2)
+parseAst (Not e1 e2) = Operation "!=" (parseAst e1) (parseAst e2)
 parseAst (Ge  e1 e2) = Operation ">=" (parseAst e1) (parseAst e2)
 parseAst (Le  e1 e2) = Operation "<=" (parseAst e1) (parseAst e2)
 
