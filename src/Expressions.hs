@@ -21,6 +21,7 @@ data Token
   | LESSTHAN
   | LESSEQUAL
   | EQUAL
+  | NOT
   | MOD
   | ASSIGN
   | WITH
@@ -64,6 +65,7 @@ data Ast
   | Let Ast Ast                        -- Less Than AST AST
   | Le  Ast Ast                        -- Less or equal AST AST
   | Equ Ast Ast                        -- Equal AST AST
+  | Not Ast Ast                        -- Not equal AST AST
   | Mod Ast Ast                        -- Module AST AST
   | Take Ast Ast                       -- list take n
   | CountList Ast Ast                  -- CountList Ast Ast // [0..9]
