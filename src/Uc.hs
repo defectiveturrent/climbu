@@ -16,8 +16,7 @@ main
       (exec:rest) <- getArgs
       code <- readFile $ head rest
       let
-        outcode = intercalate "\n" . execute . tokenise $ code
-        finalcode = "#include \"standard.hpp\"\n\n" ++ outcode
+        gen = genCode code
 
-      writeFile ((head rest) ++ ".cpp") finalcode
+      writeFile ((head rest) ++ ".cpp") gen
       system $ "g++ -std=c++14 -o" ++ exec ++ " " ++ ((head rest) ++ ".cpp")
