@@ -3,7 +3,6 @@ module Translator where
 import Data.Char
 import Data.List
 import Data.Maybe
-import Data.String.Utils
 import Expressions
 import Parser
 
@@ -101,6 +100,14 @@ execute stack
     in
       map (\x -> (translate x) ++ ";") outcode
 
+genCode stack
+  = "#include \"standard.hpp\"\n\n"
+  ++ "int main( int countArgs, char** args )\n"
+  ++ "{\n"
+  ++ (intercalate "\n" . execute . tokenise $ stack) ++ "\n"
+  ++ "return 0;\n"
+  ++ "}"
+
 translate :: Inst -> String
 translate inst
   = case inst of
@@ -138,13 +145,16 @@ translate inst
       Function name args body ->
         let
           strname = translate name
+          checkName = if strname == "main" then "_main" else strname
+
+          line = "auto " ++ checkName ++ " = [=](" ++ (intercalate "," $ map (\x -> "auto "++(translate x)) args) ++ "){ return " ++ (translate body) ++ "; }"
         in
           if strname /= "main"
             then
-              "auto " ++ (translate name) ++ " = [](" ++ (intercalate "," $ map (\x -> "auto "++(translate x)) args) ++ "){ return " ++ (translate body) ++ "; }"
+              line
 
             else
-              "int main(int argc, char** argv){ return " ++ (translate body) ++ "; }"
+              line ++ ";\n_main()" 
 
       Lambda args body ->
         "[](" ++ (intercalate "," $ map (\x -> "auto "++(translate x)) args) ++ "){ return " ++ (translate body) ++ "; }"
