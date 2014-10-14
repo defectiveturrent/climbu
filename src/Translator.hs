@@ -11,7 +11,7 @@ import Parser
 data Inst
   = PushVar String
   | PushConst String
-  | PushString String
+  | PushChar Char
   | AssignTo Inst Inst
   | Operation String Inst Inst
   | ForList Inst Inst Inst Inst   -- Var; Result; Ranges; Condition.
@@ -23,6 +23,7 @@ data Inst
   | Lambda [Inst] Inst            -- [](auto a, auto b){ }
   | CallFunction Inst [Inst]      -- foo (1, x, "Hey")
   | DoTake Inst Inst              -- list take n
+  | ConcatList Inst Inst          -- [1, 2] ++ [3, 4]
   | TNothing
   | Error String                  -- For format errors
   deriving (Show, Read, Eq)
@@ -30,10 +31,12 @@ data Inst
 
 parseAst (Void) = TNothing
 parseAst (Ident x) = PushVar x
-parseAst (CharString x) = PushString x
+parseAst (CharString x) = MakeSimpleList $ map PushChar x
+parseAst (CharByte x) = PushChar x
 parseAst (Num x) = PushConst (show x)
 parseAst (Assign e1 e2) = AssignTo (parseAst e1) (parseAst e2)
 parseAst (Take e1 e2) = DoTake (parseAst e1) (parseAst e2)
+parseAst (Concat e1 e2) = ConcatList (parseAst e1) (parseAst e2)
 
 parseAst (Add e1 e2) = Operation "+" (parseAst e1) (parseAst e2)
 parseAst (Sub e1 e2) = Operation "-" (parseAst e1) (parseAst e2)
@@ -117,8 +120,12 @@ translate inst
       PushConst x ->
         x
 
-      PushString x ->
-        "\"" ++ x ++ "\""
+      PushChar x ->
+        if x == '\''
+          then
+            "'\\''"
+          else
+            ['\'', x, '\'']
 
       AssignTo i1 i2 ->
         "auto " ++ (translate i1) ++ " = " ++ (translate i2)
@@ -133,7 +140,7 @@ translate inst
         "countlist(" ++ (translate min_) ++ ", " ++ (translate max_) ++ ")"
 
       MakeSimpleList content ->
-        "{" ++ (intercalate "," $ map translate content) ++ "}"
+        "vector<decltype(" ++ (translate (head content)) ++ ")>({" ++ (intercalate "," $ map translate content) ++ "})"
 
       Block i ->
         "(" ++ (translate i) ++ ")"
@@ -147,7 +154,7 @@ translate inst
           strname = translate name
           checkName = if strname == "main" then "_main" else strname
 
-          line = "auto " ++ checkName ++ " = [=](" ++ (intercalate "," $ map (\x -> "auto "++(translate x)) args) ++ "){ return " ++ (translate body) ++ "; }"
+          line = "auto " ++ checkName ++ " = [&](" ++ (intercalate "," $ map (\x -> "auto "++(translate x)) args) ++ "){ return " ++ (translate body) ++ "; }"
         in
           if strname /= "main"
             then
@@ -157,13 +164,16 @@ translate inst
               line ++ ";\n_main()" 
 
       Lambda args body ->
-        "[](" ++ (intercalate "," $ map (\x -> "auto "++(translate x)) args) ++ "){ return " ++ (translate body) ++ "; }"
+        "[&](" ++ (intercalate "," $ map (\x -> "auto "++(translate x)) args) ++ "){ return " ++ (translate body) ++ "; }"
 
       CallFunction name args ->
         (translate name) ++ "(" ++ (intercalate "," $ map translate args) ++ ")"
 
       DoTake i1 i2 ->
         (translate i1) ++ "[" ++ (translate i2) ++ "]"
+
+      ConcatList i1 i2 ->
+        "conc(" ++ (translate i1)  ++ "," ++ (translate i2) ++ ")"
 
       Error msg ->
         error msg
