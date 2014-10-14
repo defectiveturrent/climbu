@@ -55,6 +55,7 @@ tokenise ('(':'*':rest)             -- (comments)
     in
       subtokenise rest
 
+tokenise (';':rest) = EOF : tokenise rest
 tokenise ('(':rest) = OPENPAREN : tokenise rest
 tokenise (')':rest) = CLOSEPAREN : tokenise rest
 tokenise ('[':rest) = OPENBRACKETS : tokenise rest
@@ -63,6 +64,7 @@ tokenise ('{':rest) = OPENKEYS : tokenise rest
 tokenise ('}':rest) = CLOSEKEYS : tokenise rest
 tokenise ('\'':x:'\'':rest) = CHAR x : tokenise rest
 tokenise ('.':'.':rest) = COUNTLIST : tokenise rest
+tokenise ('+':'+':rest) = CONCATLIST : tokenise rest
 tokenise ('+':rest) = PLUS : tokenise rest
 tokenise ('-':rest) = MINUS : tokenise rest
 tokenise ('*':rest) = MUL : tokenise rest
@@ -77,9 +79,6 @@ tokenise ('=':'=':rest) = EQUAL : tokenise rest
 tokenise ('=':rest) = ASSIGN : tokenise rest
 tokenise (',':rest) = COMMA : tokenise rest
 tokenise (':':rest) = CALLARGS : tokenise rest
-
-tokenise ('a':'n':'d':x:rest)
-  | not $ isName x = EOF : tokenise rest
 
 tokenise ('c':'a':'l':'l':x:rest)
   | not $ isName x
@@ -535,7 +534,14 @@ parseExp tokens
         in
           ( Take factortree subexptree, rest3 )
 
+      (CONCATLIST : rest2) ->
+        let
+          (subexptree, rest3) = parseHighExp rest2
+        in
+          ( Concat factortree subexptree, rest3 )
+
       -- Like an 'otherwise'
       othertokens ->
         (factortree, othertokens)
+
 
