@@ -43,6 +43,18 @@ tokenise ('/':'/':rest)             -- (comments)
     in
       tokenise rest2
 
+tokenise ('(':'*':rest)             -- (comments)
+  = let
+      subtokenise [] = []
+      subtokenise ('*':')':rest2)
+        = tokenise rest2
+
+      subtokenise (_:rest2)
+        = subtokenise rest2
+
+    in
+      subtokenise rest
+
 tokenise ('(':rest) = OPENPAREN : tokenise rest
 tokenise (')':rest) = CLOSEPAREN : tokenise rest
 tokenise ('[':rest) = OPENBRACKETS : tokenise rest
@@ -54,6 +66,7 @@ tokenise ('.':'.':rest) = COUNTLIST : tokenise rest
 tokenise ('+':rest) = PLUS : tokenise rest
 tokenise ('-':rest) = MINUS : tokenise rest
 tokenise ('*':rest) = MUL : tokenise rest
+tokenise ('/':'=':rest) = NOT : tokenise rest
 tokenise ('/':rest) = DIV : tokenise rest
 tokenise ('%':rest) = MOD : tokenise rest
 tokenise ('>':'=':rest) = GREATEREQUAL : tokenise rest
@@ -61,7 +74,6 @@ tokenise ('>':rest) = GREATERTHAN : tokenise rest
 tokenise ('<':'=':rest) = LESSEQUAL : tokenise rest
 tokenise ('<':rest) = LESSTHAN : tokenise rest
 tokenise ('=':'=':rest) = EQUAL : tokenise rest
-tokenise ('/':'=':rest) = NOT : tokenise rest
 tokenise ('=':rest) = ASSIGN : tokenise rest
 tokenise (',':rest) = COMMA : tokenise rest
 tokenise (':':rest) = CALLARGS : tokenise rest
@@ -164,6 +176,7 @@ parseFactors ((STRING str):rest)
 
 parseFactors ((CHAR ch):rest)
     = (CharByte ch, rest)
+
 -- Parse numbers
 parseFactors ((CONST x):rest)
     = (Num x, rest)
@@ -217,21 +230,17 @@ parseFactors ((OPENBRACKETS):rest)
     = let
         (bracket, restBracket) = getRightList rest
 
-        separateCommas :: [Token] -> [[Token]]
-        separateCommas tokens
-          = case dropWhile (==COMMA) tokens of
-              [] ->
-                []
+        parseCommas [] = []
+        parseCommas pair
+          = let
+              (content, rest) = parseHighExp pair
 
-              other ->
-                let
-                  (token, restTokens)
-                    = break (==COMMA) other
-                in
-                  token : separateCommas restTokens
-
-        parseIndices
-          = map (fst . parseHighExp) . separateCommas
+            in
+              if not $ null rest
+                then
+                  content : parseCommas (tail rest)
+                else
+                  [content]
 
         getRightList xs
           = let
@@ -252,13 +261,13 @@ parseFactors ((OPENBRACKETS):rest)
               check (n, acc, (y:ys))
                 = case y of
                     OPENBRACKETS ->
-                      check (n + 1, (if n == 0 then acc ++ [y] else acc), ys)
+                      check (n + 1, acc ++ [y], ys) -- ++ [y]
 
                     CLOSEBRACKETS ->
                       if n == 0 then
-                        (0, acc ++ [y], ys)
+                        (0, acc ++ [y], ys) -- ++ [y]
                         else
-                          check (n - 1, (if n == 0 then acc ++ [y] else acc), ys)
+                          check (n - 1, acc ++ [y], ys)
 
                     othertoken ->
                       check (n, acc ++ [y], ys)
@@ -268,7 +277,7 @@ parseFactors ((OPENBRACKETS):rest)
             in
               (listCheck, restCheck)
       in
-        (ComprehensionList (parseIndices bracket), restBracket)
+        (ComprehensionList (parseCommas $ bracket), restBracket)
 
 parseFactors ((OPENKEYS):rest)
     = let
@@ -529,5 +538,4 @@ parseExp tokens
       -- Like an 'otherwise'
       othertokens ->
         (factortree, othertokens)
-
 
