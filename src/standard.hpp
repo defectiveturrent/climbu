@@ -27,11 +27,6 @@ int print ( const vector<char>& msg )
   return 0;
 }
 
-int print ( const string& msg )
-{
-  return cout << msg, 0;
-}
-
 int print ( float msg )
 {
   return cout << msg, 0;
