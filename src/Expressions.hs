@@ -27,9 +27,11 @@ data Token
   | WITH
   | COMMA
   | CALLARGS
+  | NONKNOW String
   | CALLALONE String
   | COMMENT
   | COUNTLIST
+  | CONCATLIST
   | OPENPAREN
   | CLOSEPAREN
   | OPENBRACKETS
@@ -68,6 +70,7 @@ data Ast
   | Not Ast Ast                        -- Not equal AST AST
   | Mod Ast Ast                        -- Module AST AST
   | Take Ast Ast                       -- list take n
+  | Concat Ast Ast                     -- Concat a list
   | CountList Ast Ast                  -- CountList Ast Ast // [0..9]
   | Ident String                       -- VAR
   | CharString String                  -- A string
