@@ -36,7 +36,7 @@ tokenise ('\t':rest) = tokenise rest
     in
       (STRING string) : tokenise rest2 -}
 
-tokenise ('"':rest)
+tokenise ('\"':rest)
   = let
       subtokenise ('\\' : '"' : rest2) acc
         = subtokenise (rest2) (acc ++ "\"")
