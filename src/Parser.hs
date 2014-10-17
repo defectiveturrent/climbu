@@ -29,12 +29,27 @@ tokenise ('\n':rest) = tokenise rest
 tokenise ('\r':rest) = tokenise rest
 tokenise ('\t':rest) = tokenise rest
 
-tokenise ('"':rest)
+{-tokenise ('"':rest)
   = let
       (string, _:rest2) = break (=='"') rest
 
     in
-      (STRING string) : tokenise rest2
+      (STRING string) : tokenise rest2 -}
+
+tokenise ('"':rest)
+  = let
+      subtokenise ('\\' : '"' : rest2) acc
+        = subtokenise (rest2) (acc ++ "\"")
+
+      subtokenise ('"' : rest2) acc
+        = STRING acc : tokenise rest2
+
+      subtokenise (x : rest2) acc
+        = subtokenise (rest2) (acc ++ [x])
+
+    in
+      subtokenise rest []
+
 
 tokenise ('/':'/':rest)             -- (comments)
   = let
@@ -64,6 +79,7 @@ tokenise ('{':rest) = OPENKEYS : tokenise rest
 tokenise ('}':rest) = CLOSEKEYS : tokenise rest
 tokenise ('\'':x:'\'':rest) = CHAR x : tokenise rest
 tokenise ('.':'.':rest) = COUNTLIST : tokenise rest
+tokenise ('.':rest) = CALLARGS : tokenise rest
 tokenise ('+':'+':rest) = CONCATLIST : tokenise rest
 tokenise ('+':rest) = PLUS : tokenise rest
 tokenise ('-':rest) = MINUS : tokenise rest
@@ -71,6 +87,7 @@ tokenise ('*':rest) = MUL : tokenise rest
 tokenise ('/':'=':rest) = NOT : tokenise rest
 tokenise ('/':rest) = DIV : tokenise rest
 tokenise ('%':rest) = MOD : tokenise rest
+tokenise ('|':'>':rest) =  TAKE : tokenise rest
 tokenise ('>':'=':rest) = GREATEREQUAL : tokenise rest
 tokenise ('>':rest) = GREATERTHAN : tokenise rest
 tokenise ('<':'=':rest) = LESSEQUAL : tokenise rest
@@ -78,21 +95,21 @@ tokenise ('<':rest) = LESSTHAN : tokenise rest
 tokenise ('=':'=':rest) = EQUAL : tokenise rest
 tokenise ('=':rest) = ASSIGN : tokenise rest
 tokenise (',':rest) = COMMA : tokenise rest
-tokenise (':':rest) = CALLARGS : tokenise rest
 
 tokenise ('`':rest)
   = let
       (n, '`':rest2) = getname rest
 
     in
-      NONKNOW n : tokenise rest2
+      OPCALLFUNC n : tokenise rest2
 
 tokenise ('c':'a':'l':'l':x:rest)
   | not $ isName x
   = let
       (n, rest2) = getname rest
+
     in 
-      (CALLALONE n) : tokenise rest2
+      CALLALONE n : tokenise rest2
 
 tokenise ('w':'i':'t':'h':x:rest)
   | not $ isName x =  WITH : tokenise rest
@@ -117,9 +134,6 @@ tokenise ('w':'h':'e':'n':x:rest)
 
 tokenise ('d':'e':'f':x:rest)
   | not $ isName x =  FUNC : tokenise rest
-
-tokenise ('t':'a':'k':'e':x:rest)
-  | not $ isName x =  TAKE : tokenise rest
 
 tokenise (ch:rest)
   | isDigit ch
@@ -369,6 +383,7 @@ parseFactors ((EOF):rest)
 parseFactor token
     = fst $ parseFactors [token]
 
+
 parseAllFactors [] = []
 parseAllFactors (CLOSEPAREN:_) = []
 parseAllFactors (CLOSEBRACKETS:_) = []
@@ -409,7 +424,7 @@ parseHighExp tokens@( prefixToken : restTokens )
         in
           (LambdaDef arguments bodyFunction, rest2)
 
-      otherstokens ->
+      othertokens ->
         parseExp tokens
 
 parseExp :: [Token] -> (Ast, [Token])
@@ -418,143 +433,143 @@ parseExp tokens
       (factortree, rest) = parseFactors tokens
     in
       case rest of
-      (FOR : rest2) ->
-        let
-          (var, rest3) = parseHighExp rest2
+        (FOR : rest2) ->
+          let
+            (var, rest3) = parseFactors rest2
 
-        in
-          case rest3 of
-            (IN : rest4) ->
-              let
-                (range, rest5) = parseHighExp rest4
-              in
-                case rest5 of
-                  (WHEN : final) ->
-                    let
-                      (cond, finalrest) = parseHighExp final
+          in
+            case rest3 of
+              (IN : rest4) ->
+                let
+                  (range, rest5) = parseHighExp rest4
+                in
+                  case rest5 of
+                    (WHEN : final) ->
+                      let
+                        (cond, finalrest) = parseHighExp final
 
-                      result = factortree
-                      counting = In var range
-                      condition = When cond
-                    in
-                      (For result counting condition, finalrest)
+                        result = factortree
+                        counting = In var range
+                        condition = When cond
+                      in
+                        (For result counting condition, finalrest)
 
-                  other ->
-                    (For factortree (In var range) (When Void), other)
+                    other ->
+                      (For factortree (In var range) (When Void), other)
 
-            other ->
-              (factortree, other)
+              other ->
+                (factortree, other)
 
-      (ASSIGN : rest2) -> 
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Assign factortree subexptree, rest3 )
+        (ASSIGN : rest2) -> 
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Assign factortree subexptree, rest3 )
 
-      (PLUS : rest2) -> 
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Add factortree subexptree, rest3 )
+        (PLUS : rest2) -> 
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Add factortree subexptree, rest3 )
 
-      (MINUS : rest2) -> 
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Sub factortree subexptree, rest3 )
+        (MINUS : rest2) -> 
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Sub factortree subexptree, rest3 )
 
-      (MUL : rest2) ->
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Mul factortree subexptree, rest3 )
+        (MUL : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Mul factortree subexptree, rest3 )
 
-      (DIV : rest2) ->
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Div factortree subexptree, rest3 )
+        (DIV : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Div factortree subexptree, rest3 )
 
-      (GREATERTHAN : rest2) ->
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Grt factortree subexptree, rest3 )
+        (GREATERTHAN : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Grt factortree subexptree, rest3 )
 
-      (GREATEREQUAL : rest2) ->
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Ge factortree subexptree, rest3 )
+        (GREATEREQUAL : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Ge factortree subexptree, rest3 )
 
-      (LESSTHAN : rest2) ->
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Let factortree subexptree, rest3 )
+        (LESSTHAN : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Let factortree subexptree, rest3 )
 
-      (LESSEQUAL : rest2) ->
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Le factortree subexptree, rest3 )
+        (LESSEQUAL : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Le factortree subexptree, rest3 )
 
-      (EQUAL : rest2) ->
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Equ factortree subexptree, rest3 )
-      
-      (NOT : rest2) ->
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Not factortree subexptree, rest3 )
+        (EQUAL : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Equ factortree subexptree, rest3 )
+        
+        (NOT : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Not factortree subexptree, rest3 )
 
-      (MOD : rest2) ->
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Mod factortree subexptree, rest3 )
+        (MOD : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Mod factortree subexptree, rest3 )
 
-      (WITH : rest2) ->
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Call factortree [subexptree], rest3 )
+        (WITH : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Call factortree [subexptree], rest3 )
 
-      (COUNTLIST : rest2) ->
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( CountList factortree subexptree, rest3)
+        (COUNTLIST : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( CountList factortree subexptree, rest3)
 
-      (CALLARGS : rest2) ->
-        let
-          (subexptree, rest3) = (parseAllFactors rest2, [])     
-        in
-          ( Call factortree subexptree, rest3)
+        (CALLARGS : rest2) ->
+          let
+            (subexptree, rest3) = (parseAllFactors rest2, [])
+          in
+            ( Call factortree subexptree, rest3)
 
-      (TAKE : rest2) ->
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Take factortree subexptree, rest3 )
+        (TAKE : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Take factortree subexptree, rest3 )
 
-      (CONCATLIST : rest2) ->
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Concat factortree subexptree, rest3 )
+        (CONCATLIST : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Concat factortree subexptree, rest3 )
 
-      (NONKNOW n : rest2) ->
-        let
-          (subexptree, rest3) = parseHighExp rest2
-        in
-          ( Call (Ident n) [factortree, subexptree], rest3)
+        (OPCALLFUNC n : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Call (Ident n) [factortree, subexptree], rest3)
 
-      -- Like an 'otherwise'
-      othertokens ->
-        (factortree, othertokens)
+        -- Like an 'otherwise'
+        othertokens ->   -- TODO
+          (factortree, othertokens)
 
 
