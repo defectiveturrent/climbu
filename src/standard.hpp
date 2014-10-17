@@ -84,7 +84,8 @@ vector<int> countlist ( int min, int max )
   return res;
 }
 
-template<class t> vector<t> reverse( const vector<t>& list )
+template<class t>
+  vector<t> reverse( const vector<t>& list )
 {
   vector<t> res;
   for( int i = list.size() - 1; i >= 0; --i )
@@ -95,24 +96,28 @@ template<class t> vector<t> reverse( const vector<t>& list )
   return res;
 }
 
-template<class t> t head( const vector<t>& list )
+template<class t>
+  t head( const vector<t>& list )
 {
   return list[0];
 }
 
-template<class t> t last( const vector<t>& list )
+template<class t> 
+  t last( const vector<t>& list )
 {
   return list[list.size() - 1];
 }
 
-template<class t> vector<t> init( const vector<t>& list )
+template<class t> 
+  vector<t> init( const vector<t>& list )
 {
   vector<t> res = list;
   res.pop_back();
   return res;
 }
 
-template<class t> vector<t> tail( const vector<t>& list )
+template<class t> 
+  vector<t> tail( const vector<t>& list )
 {
   vector<t> res = reverse(list);
   res.pop_back();
@@ -120,12 +125,14 @@ template<class t> vector<t> tail( const vector<t>& list )
   return res;
 }
 
-template<class t> t index( int i, const vector<t>& list )
+template<class t> 
+  t index( int i, const vector<t>& list )
 {
   return list[i];
 }
 
-template<class t> t sum( const vector<t>& list )
+template<class t> 
+  t sum( const vector<t>& list )
 {
   t res;
   for( auto l: list )
@@ -134,7 +141,8 @@ template<class t> t sum( const vector<t>& list )
   return res;
 }
 
-template<class t> t product( const vector<t>& list )
+template<class t> 
+  t product( const vector<t>& list )
 {
   t res;
   for( auto l: list )
@@ -151,7 +159,8 @@ string conc( const string& list1, const string& list2 )
   return res;
 }
 
-template<class t> vector<t> conc( const vector<t>& list1, const vector<t>& list2 )
+template<class t> 
+  vector<t> conc( const vector<t>& list1, const vector<t>& list2 )
 {
   vector<t> res = list1;
   for( auto l2: list2 )
@@ -162,7 +171,8 @@ template<class t> vector<t> conc( const vector<t>& list1, const vector<t>& list2
   return res;
 }
 
-template<class t> bool elem( const t& element, const vector<t>& list )
+template<class t>
+  bool elem( const t& element, const vector<t>& list )
 {
   bool res;
   for( auto l: list )
