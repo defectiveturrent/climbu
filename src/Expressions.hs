@@ -27,7 +27,7 @@ data Token
   | WITH
   | COMMA
   | CALLARGS
-  | NONKNOW String
+  | OPCALLFUNC String
   | CALLALONE String
   | COMMENT
   | COUNTLIST
