@@ -4,37 +4,44 @@
 #include <cmath>
 #include <vector>
 #include <string>
+#include <cstdint>
 
 using namespace std;
+
+//
+// Structured definition
+//
+
+typedef int32_t USTDFUNC;
 
 //
 // Print functions
 //
 
-int print ( int msg )
+USTDFUNC print ( int msg )
 {
   return cout << msg, 0;
 }
 
-int print ( char msg )
+USTDFUNC print ( char msg )
 {
   return cout << msg, 0;
 }
 
-int print ( const vector<char>& msg )
+USTDFUNC print ( const vector<char>& msg )
 {
   for( auto ch: msg )
     print(ch);
   return 0;
 }
 
-int print ( float msg )
+USTDFUNC print ( float msg )
 {
   return cout << msg, 0;
 }
 
 template<class t>
-  int print ( const vector<t>& list )
+  USTDFUNC print ( const vector<t>& list )
 {
   print('[');
   for ( int i = 0; i < list.size(); ++i )
@@ -51,7 +58,7 @@ template<class t>
 //
 
 template<class t>
-  int println ( t msg )
+  USTDFUNC println ( t msg )
 {
   print(msg);
   return print('\n');
