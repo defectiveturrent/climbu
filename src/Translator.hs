@@ -36,6 +36,7 @@ parseAst (CharByte x) = PushChar x
 parseAst (Num x) = PushConst (show x)
 parseAst (Assign e1 e2) = AssignTo (parseAst e1) (parseAst e2)
 parseAst (Take e1 e2) = DoTake (parseAst e1) (parseAst e2)
+parseAst (Expo e1 e2) = CallFunction (PushVar "pow") [parseAst e1, parseAst e2]
 parseAst (Concat e1 e2) = ConcatList (parseAst e1) (parseAst e2)
 
 parseAst (Add e1 e2) = Operation "+" (parseAst e1) (parseAst e2)
@@ -81,16 +82,17 @@ parseAst (ComprehensionList ((CountList e1 e2):rest))
       ++ ", ..]\n"
 
 parseAst (ComprehensionList xs) = MakeSimpleList (map parseAst xs)
-parseAst (ParenthesesBlock e1) = Block (parseAst e1)
+parseAst (Parens e1) = Block (parseAst e1)
 parseAst (Def name args body) = Function (parseAst name) (map parseAst args) (parseAst body)
 parseAst (LambdaDef args body) = Lambda (map parseAst args) (parseAst body)
 parseAst (Call name args) = CallFunction (parseAst name) (map parseAst args)
-parseAst (Condition stat thenStat elseStat) = MakeCondition (parseAst stat) (parseAst thenStat) (parseAst elseStat)
+parseAst (Condition stat thenStat elseStat) = Block $ MakeCondition (parseAst stat) (parseAst thenStat) (parseAst elseStat)
 
 
 -- To translate tokens to instructions, you should do this:
 --
--- execute $ tokenise "def foo a = a * 2 and print with foo in 5"
+--   execute $ tokenise "def foo a = a * 2 and print with foo in 5"
+--
 
 execute :: [Token] -> [String]
 execute stack
