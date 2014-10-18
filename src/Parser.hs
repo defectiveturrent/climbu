@@ -36,7 +36,7 @@ tokenise ('\t':rest) = tokenise rest
     in
       (STRING string) : tokenise rest2 -}
 
-tokenise ('\"':rest)
+tokenise ('"':rest)
   = let
       subtokenise ('\\' : '"' : rest2) acc
         = subtokenise (rest2) (acc ++ "\"")
@@ -87,6 +87,7 @@ tokenise ('*':rest) = MUL : tokenise rest
 tokenise ('/':'=':rest) = NOT : tokenise rest
 tokenise ('/':rest) = DIV : tokenise rest
 tokenise ('%':rest) = MOD : tokenise rest
+tokenise ('^':rest) = EXPO : tokenise rest
 tokenise ('|':'>':rest) =  TAKE : tokenise rest
 tokenise ('>':'=':rest) = GREATEREQUAL : tokenise rest
 tokenise ('>':rest) = GREATERTHAN : tokenise rest
@@ -95,6 +96,7 @@ tokenise ('<':rest) = LESSTHAN : tokenise rest
 tokenise ('=':'=':rest) = EQUAL : tokenise rest
 tokenise ('=':rest) = ASSIGN : tokenise rest
 tokenise (',':rest) = COMMA : tokenise rest
+tokenise ('|':rest) = ELSE : IF : tokenise rest
 
 tokenise ('`':rest)
   = let
@@ -244,7 +246,7 @@ parseFactors ((OPENPAREN):rest)
             in
               (parenCheck, restCheck)
       in
-        (ParenthesesBlock (fst $ parseHighExp paren), restParen)
+        (Parens (fst $ parseHighExp paren), restParen)
 
 parseFactors ((OPENBRACKETS):rest)
     = let
@@ -555,6 +557,12 @@ parseExp tokens
             (subexptree, rest3) = parseHighExp rest2
           in
             ( Take factortree subexptree, rest3 )
+
+        (EXPO : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+          in
+            ( Expo factortree subexptree, rest3 )
 
         (CONCATLIST : rest2) ->
           let
