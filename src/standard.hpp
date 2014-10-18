@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <cmath>
 #include <vector>
 #include <string>
 
@@ -85,6 +86,7 @@ vector<int> countlist ( int min, int max )
 }
 
 template<class t>
+
   vector<t> reverse( const vector<t>& list )
 {
   vector<t> res;
@@ -102,13 +104,13 @@ template<class t>
   return list[0];
 }
 
-template<class t> 
+template<class t>
   t last( const vector<t>& list )
 {
   return list[list.size() - 1];
 }
 
-template<class t> 
+template<class t>
   vector<t> init( const vector<t>& list )
 {
   vector<t> res = list;
@@ -116,7 +118,7 @@ template<class t>
   return res;
 }
 
-template<class t> 
+template<class t>
   vector<t> tail( const vector<t>& list )
 {
   vector<t> res = reverse(list);
@@ -125,13 +127,13 @@ template<class t>
   return res;
 }
 
-template<class t> 
+template<class t>
   t index( int i, const vector<t>& list )
 {
   return list[i];
 }
 
-template<class t> 
+template<class t>
   t sum( const vector<t>& list )
 {
   t res;
@@ -141,7 +143,7 @@ template<class t>
   return res;
 }
 
-template<class t> 
+template<class t>
   t product( const vector<t>& list )
 {
   t res;
@@ -159,7 +161,7 @@ string conc( const string& list1, const string& list2 )
   return res;
 }
 
-template<class t> 
+template<class t>
   vector<t> conc( const vector<t>& list1, const vector<t>& list2 )
 {
   vector<t> res = list1;
