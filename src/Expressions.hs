@@ -23,6 +23,7 @@ data Token
   | EQUAL
   | NOT
   | MOD
+  | EXPO
   | ASSIGN
   | WITH
   | COMMA
@@ -70,13 +71,14 @@ data Ast
   | Not Ast Ast                        -- Not equal AST AST
   | Mod Ast Ast                        -- Module AST AST
   | Take Ast Ast                       -- list take n
+  | Expo Ast Ast                       -- Exponential AST AST
   | Concat Ast Ast                     -- Concat a list
   | CountList Ast Ast                  -- CountList Ast Ast // [0..9]
   | Ident String                       -- VAR
   | CharString String                  -- A string
   | CharByte Char                      -- A character
   | Num Int                            -- NUMBER
-  | ParenthesesBlock Ast               -- ( )
+  | Parens Ast                         -- ( )
   | ComprehensionList [Ast]            -- ComprehensionList [DATES] // [1, 2, 3]
   | LambdaDef [Ast] Ast                -- LambdaDef [ARGS] BODY // {n = n + foo}
   | Call Ast [Ast]                     -- ID [ARGS]
