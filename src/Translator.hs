@@ -87,6 +87,9 @@ parseAst (Def name args body) = Function (parseAst name) (map parseAst args) (pa
 parseAst (LambdaDef args body) = Lambda (map parseAst args) (parseAst body)
 parseAst (Call name args) = CallFunction (parseAst name) (map parseAst args)
 parseAst (Condition stat thenStat elseStat) = Block $ MakeCondition (parseAst stat) (parseAst thenStat) (parseAst elseStat)
+parseAst (IsEither e1 e2) = CallFunction (PushVar "elem") [parseAst e1, MakeSimpleList $ map parseAst e2]
+parseAst (IsNeither e1 e2) = Block $ CallFunction (PushVar "!elem") [parseAst e1, MakeSimpleList $ map parseAst e2]
+parseAst _ = TNothing
 
 
 -- To translate tokens to instructions, you should do this:
@@ -105,12 +108,14 @@ execute stack
     in
       map (\x -> (translate x) ++ ";") outcode
 
+genCode :: String -> String
 genCode stack
   = "#include \"standard.hpp\"\n\n"
+  ++ (intercalate "\n" . execute . tokenise $ stack)
+  ++ "\n\n"
   ++ "int main( int countArgs, char** args )\n"
   ++ "{\n"
-  ++ (intercalate "\n" . execute . tokenise $ stack) ++ "\n"
-  ++ "return 0;\n"
+  ++ "  return _main();\n"
   ++ "}"
 
 translate :: Inst -> String
@@ -156,14 +161,16 @@ translate inst
           strname = translate name
           checkName = if strname == "main" then "_main" else strname
 
-          line = "auto " ++ checkName ++ " = [&](" ++ (intercalate "," $ map (\x -> "auto "++(translate x)) args) ++ "){ return " ++ (translate body) ++ "; }"
+          --line = translate $ AssignTo (PushVar checkName) (Lambda args body)
+          line
+            =  genGenericPrefix (if args /= [TNothing] then length args else 0)
+            ++ checkName
+            ++ genGenericArguments args
+            ++ "\n{ return "
+            ++ (translate body)
+            ++ "; }"
         in
-          if strname /= "main"
-            then
-              line
-
-            else
-              line ++ ";\n_main()" 
+          line
 
       Lambda args body ->
         "[&](" ++ (intercalate "," $ map (\x -> "auto "++(translate x)) args) ++ "){ return " ++ (translate body) ++ "; }"
@@ -179,4 +186,45 @@ translate inst
 
       Error msg ->
         error msg
+
+
+genGenericPrefix n
+  = let
+      prefix = "template<"
+      suffix = "> auto "
+      classes = map (\number -> "class t_" ++ show number) [1..n]
+
+      completePrefix
+        =  prefix
+        ++ (intercalate ", " classes)
+        ++ suffix
+
+    in
+      if n /= 0
+        then
+          completePrefix
+        else
+          "auto "
+
+genGenericArguments args
+  = let
+      prefix = "("
+      suffix = ")"
+      classes
+        = if args /= [TNothing]
+            then
+              map (\number -> "t_" ++ show number) [1 .. length args]
+            else
+              []
+
+      completeArguments
+        =  prefix
+        ++ intercalate ", " (map (\(a, b) -> unwords [a, b]) $ zip classes (map translate args))
+        ++ suffix
+
+    in
+      completeArguments
+
+
+
 
