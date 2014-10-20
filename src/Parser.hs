@@ -1,3 +1,23 @@
+{-
+
+A TODO list:
+
+ TODO >>>  if stat in either "y" "ye" "yes" then "Ok" else "No"
+
+ TODO >>>  stat in either 1 2 3
+
+ TOFIX >>> parseAllFactors
+
+
+
+-}
+
+
+
+
+
+
+
 module Parser where
 
 import Data.Char
@@ -114,28 +134,38 @@ tokenise ('c':'a':'l':'l':x:rest)
       CALLALONE n : tokenise rest2
 
 tokenise ('w':'i':'t':'h':x:rest)
-  | not $ isName x =  WITH : tokenise rest
+  | not $ isName x =  WITH : tokenise (x:rest)
 
 tokenise ('i':'f':x:rest)
-  | not $ isName x =  IF : tokenise rest
+  | not $ isName x =  IF : tokenise (x:rest)
 
 tokenise ('t':'h':'e':'n':x:rest)
-  | not $ isName x =  THEN : tokenise rest
+  | not $ isName x =  THEN : tokenise (x:rest)
 
 tokenise ('e':'l':'s':'e':x:rest)
-  | not $ isName x =  ELSE : tokenise rest
+  | not $ isName x =  ELSE : tokenise (x:rest)
 
 tokenise ('f':'o':'r':x:rest)
-  | not $ isName x =  FOR : tokenise rest
+  | not $ isName x =  FOR : tokenise (x:rest)
+
+tokenise ('i':'s':x:'e':'i':'t':'h':'e':'r':y:rest)
+  | not $ isName x
+  , not $ isName y
+    = ISEITHER : tokenise (y:rest)
+
+tokenise ('i':'s':x:'n':'e':'i':'t':'h':'e':'r':y:rest)
+  | not $ isName x
+  , not $ isName y
+    = ISNEITHER : tokenise (y:rest)
 
 tokenise ('i':'n':x:rest)
-  | not $ isName x =  IN : tokenise rest
+  | not $ isName x =  IN : tokenise (x:rest)
 
 tokenise ('w':'h':'e':'n':x:rest)
-  | not $ isName x =  WHEN : tokenise rest
+  | not $ isName x =  WHEN : tokenise (x:rest)
 
 tokenise ('d':'e':'f':x:rest)
-  | not $ isName x =  FUNC : tokenise rest
+  | not $ isName x =  FUNC : tokenise (x:rest)
 
 tokenise (ch:rest)
   | isDigit ch
@@ -174,7 +204,6 @@ convert str
         | otherwise  = (n, ch : str)
     in 
       conv' str 0
-
 
 parser :: [Token] -> Ast
 parser tokens
@@ -385,18 +414,39 @@ parseFactors ((EOF):rest)
 parseFactor token
     = fst $ parseFactors [token]
 
+parseAllFactors tokens'
+ = let
+    parsef' (ast, tokens)
+      = let
+          eofs
+            = [ CLOSEPAREN
+              , CLOSEBRACKETS
+              , CLOSEKEYS
+              , IF
+              , THEN
+              , ELSE
+              , FOR
+              , IN
+              , WHEN
+              , EOF
+              ]
 
-parseAllFactors [] = []
-parseAllFactors (CLOSEPAREN:_) = []
-parseAllFactors (CLOSEBRACKETS:_) = []
-parseAllFactors (CLOSEKEYS:_) = []
-parseAllFactors (EOF:_) = []
-parseAllFactors tokens
-  = let
-      (ast, rest) = parseHighExp tokens
+          (nast, rest) = parseHighExp tokens
 
-    in
-      ast : parseAllFactors rest
+          nextToken = if null rest then VOID else head rest
+        in
+          if nextToken /= VOID
+            then
+              if nextToken `elem` eofs
+                then
+                  (ast ++ [nast], rest)
+                else
+                  parsef' (ast ++ [nast], rest)
+
+            else
+              (ast ++ [nast], rest)
+   in
+    parsef' ([], tokens')
 
 parseHighExp :: [Token] -> (Ast, [Token])
 parseHighExp []
@@ -412,7 +462,7 @@ parseHighExp tokens@( prefixToken : restTokens )
           (stat : rest) = restTokens -- Separates tokens in prefix, stat and rest
 
           functionIdent = parseFactor stat
-          arguments = parseAllFactors . takeWhile (/=ASSIGN) $ rest
+          arguments = fst . parseAllFactors . takeWhile (/=ASSIGN) $ rest
           (bodyFunction, rest2) = parseHighExp . tail . dropWhile (/=ASSIGN) $ rest -- Remove Assign from head (tail)
             
         in
@@ -420,7 +470,7 @@ parseHighExp tokens@( prefixToken : restTokens )
 
       LAMBDA ->
         let
-          arguments = parseAllFactors . takeWhile (/=ASSIGN) $ restTokens
+          arguments = fst . parseAllFactors . takeWhile (/=ASSIGN) $ restTokens
           (bodyFunction, rest2) = parseHighExp . tail . dropWhile (/=ASSIGN) $ restTokens -- Remove Assign from head (tail)
 
         in
@@ -548,7 +598,7 @@ parseExp tokens
 
         (CALLARGS : rest2) ->
           let
-            (subexptree, rest3) = (parseAllFactors rest2, [])
+            (subexptree, rest3) = parseAllFactors rest2
           in
             ( Call factortree subexptree, rest3)
 
@@ -575,6 +625,20 @@ parseExp tokens
             (subexptree, rest3) = parseHighExp rest2
           in
             ( Call (Ident n) [factortree, subexptree], rest3)
+
+        (ISEITHER : rest2) ->
+          let
+            (subexptree, rest3) = parseAllFactors rest2
+
+          in
+            (IsEither factortree subexptree, rest3)
+
+        (ISNEITHER : rest2) ->
+          let
+            (subexptree, rest3) = parseAllFactors rest2
+
+          in
+            (IsNeither factortree subexptree, rest3)
 
         -- Like an 'otherwise'
         othertokens ->   -- TODO
