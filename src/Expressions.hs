@@ -43,6 +43,8 @@ data Token
   | IF
   | THEN
   | ELSE
+  | ISEITHER
+  | ISNEITHER
   | WHILE
   | FOR
   | IN
@@ -85,6 +87,8 @@ data Ast
   | Then Ast
   | Else Ast
   | Condition Ast Ast Ast              -- (Condition ast) (Then ast) (Else ast)
+  | IsEither Ast [Ast]                 -- n in either 1 2 3
+  | IsNeither Ast [Ast]                 -- n in either 1 2 3
   | When Ast                           -- Simple condition
   | In Ast Ast                         -- Simple operator, like each
   | For Ast Ast Ast                    -- Specific comprehension list
