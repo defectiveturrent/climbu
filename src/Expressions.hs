@@ -47,6 +47,7 @@ data Token
   | ISNEITHER
   | WHILE
   | FOR
+  | LET
   | IN
   | WHEN
   | FUNC
@@ -81,6 +82,7 @@ data Ast
   | CharByte Char                      -- A character
   | Num Int                            -- NUMBER
   | Parens Ast                         -- ( )
+  | Tuple [Ast]                        -- (a, 7, "hello")
   | ComprehensionList [Ast]            -- ComprehensionList [DATES] // [1, 2, 3]
   | LambdaDef [Ast] Ast                -- LambdaDef [ARGS] BODY // {n = n + foo}
   | Call Ast [Ast]                     -- ID [ARGS]
@@ -92,6 +94,7 @@ data Ast
   | When Ast                           -- Simple condition
   | In Ast Ast                         -- Simple operator, like each
   | For Ast Ast Ast                    -- Specific comprehension list
+  | LetIn [Ast] Ast                    
   | Void
   | Eof
   deriving (Show, Read, Eq)
