@@ -24,12 +24,16 @@ data Inst
   | CallFunction Inst [Inst]      -- foo (1, x, "Hey")
   | DoTake Inst Inst              -- list take n
   | ConcatList Inst Inst          -- [1, 2] ++ [3, 4]
-  | TNothing
+  | LetStack [Inst]               --
+  | TupleInst [Inst]              --
+  | TNothing                      -- For empty places
+  | Ignore                        -- _
   | Error String                  -- For format errors
   deriving (Show, Read, Eq)
 
 
 parseAst (Void) = TNothing
+parseAst (Ident "_") = Ignore
 parseAst (Ident x) = PushVar x
 parseAst (CharString x) = MakeSimpleList $ map PushChar x
 parseAst (CharByte x) = PushChar x
@@ -89,6 +93,8 @@ parseAst (Call name args) = CallFunction (parseAst name) (map parseAst args)
 parseAst (Condition stat thenStat elseStat) = Block $ MakeCondition (parseAst stat) (parseAst thenStat) (parseAst elseStat)
 parseAst (IsEither e1 e2) = CallFunction (PushVar "elem") [parseAst e1, MakeSimpleList $ map parseAst e2]
 parseAst (IsNeither e1 e2) = Block $ CallFunction (PushVar "!elem") [parseAst e1, MakeSimpleList $ map parseAst e2]
+parseAst (LetIn e1 e2) = LetStack $ map parseAst (e1 ++ [e2])
+parseAst (Tuple e) = TupleInst $ map parseAst e
 parseAst _ = TNothing
 
 
@@ -115,7 +121,7 @@ genCode stack
   ++ "\n\n"
   ++ "int main( int countArgs, char** args )\n"
   ++ "{\n"
-  ++ "  return _main();\n"
+  ++ "  return _main(), 0;\n"
   ++ "}"
 
 translate :: Inst -> String
@@ -135,7 +141,27 @@ translate inst
             ['\'', x, '\'']
 
       AssignTo i1 i2 ->
-        "auto " ++ (translate i1) ++ " = " ++ (translate i2)
+        case i1 of
+          TupleInst list ->
+            let
+              parseTuple n var
+                = if var == Ignore
+                    then
+                      []
+
+                    else
+                      "auto " ++ (translate var) ++ " = get<" ++ show n ++ ">(" ++ (translate i2) ++ ")"
+
+              vars = [parseTuple n var | n   <- [0..] 
+                                       | var <- list
+                                       ]
+
+            in
+              intercalate ";\n" $ filter (not . null) vars
+
+
+          otherinst ->
+            (typeChecker i2) ++ " " ++ (translate i1) ++ " = " ++ (translate i2)
 
       Operation op i1 i2 ->
         (translate i1) ++ op ++ (translate i2)
@@ -146,8 +172,8 @@ translate inst
       MakeCountList min_ max_ ->
         "countlist(" ++ (translate min_) ++ ", " ++ (translate max_) ++ ")"
 
-      MakeSimpleList content ->
-        "vector<decltype(" ++ (translate (head content)) ++ ")>({" ++ (intercalate "," $ map translate content) ++ "})"
+      msl @ (MakeSimpleList content) ->
+        typeChecker msl ++ "({" ++ (intercalate "," $ map translate content) ++ "})"
 
       Block i ->
         "(" ++ (translate i) ++ ")"
@@ -164,6 +190,8 @@ translate inst
           --line = translate $ AssignTo (PushVar checkName) (Lambda args body)
           line
             =  genGenericPrefix (if args /= [TNothing] then length args else 0)
+            ++ typeChecker body
+            ++ " "
             ++ checkName
             ++ genGenericArguments args
             ++ "\n{ return "
@@ -184,6 +212,12 @@ translate inst
       ConcatList i1 i2 ->
         "conc(" ++ (translate i1)  ++ "," ++ (translate i2) ++ ")"
 
+      LetStack expressions ->
+        "[&](){ " ++ (intercalate ";" . map translate . init $ expressions) ++ "; return " ++ (translate $ last expressions) ++ "; }()"
+
+      TupleInst i ->
+        "make_tuple(" ++ (intercalate "," $ map translate i) ++ ")"
+
       Error msg ->
         error msg
 
@@ -191,7 +225,7 @@ translate inst
 genGenericPrefix n
   = let
       prefix = "template<"
-      suffix = "> auto "
+      suffix = "> "
       classes = map (\number -> "class t_" ++ show number) [1..n]
 
       completePrefix
@@ -204,7 +238,7 @@ genGenericPrefix n
         then
           completePrefix
         else
-          "auto "
+          " "
 
 genGenericArguments args
   = let
@@ -227,4 +261,105 @@ genGenericArguments args
 
 
 
+defnConsts
+  = [ ("true", BoolLabel)
+    , ("false", BoolLabel)
+    ]
 
+defnCallFun
+  = [ ("print", IntLabel)
+    , ("println", IntLabel)
+    , ("sum", IntLabel)
+    , ("product", IntLabel)
+    , ("elem", BoolLabel)
+    ]
+
+getdefn var db
+  = let
+      gdc (Just c) = c
+      gdc Nothing = UnknownLabel
+
+    in
+      gdc $ lookup var db
+
+data Label
+  = IntLabel
+  | DoubleLabel
+  | CharLabel
+  | BoolLabel
+  | List Label
+  | UnknownLabel
+  deriving(Eq, Read)
+
+instance Show Label
+  where
+    show IntLabel = "int"
+    show DoubleLabel = "double"
+    show CharLabel = "char"
+    show BoolLabel = "bool"
+    show (List label) = "vector<" ++ show label ++ ">"
+    show UnknownLabel = "auto"
+
+typeChecker :: Inst -> String
+typeChecker expression
+  = let
+      getLabel expr
+        = case expr of
+            PushConst _ ->
+              IntLabel
+
+            PushChar _ ->
+              CharLabel
+
+            MakeSimpleList (x:_) ->
+              List (getLabel x)
+
+            MakeCountList _ _ ->
+              List IntLabel
+
+            MakeCondition _ x y ->
+              if getLabel x == UnknownLabel
+                then
+                  getLabel y
+                else
+                  getLabel x
+
+            ForList _ x _ _ ->
+              getLabel x
+
+            ConcatList x _ ->
+              getLabel x
+
+            PushVar x ->
+              getdefn x defnConsts
+
+            CallFunction (PushVar x) _ ->
+              getdefn x defnCallFun
+
+            LetStack x ->
+              getLabel $ last x
+
+            Operation operator _ _ ->
+              case operator of
+                ">" ->
+                  BoolLabel
+                "<" ->
+                  BoolLabel
+                ">=" ->
+                  BoolLabel
+                "<=" ->
+                  BoolLabel
+                "==" ->
+                  BoolLabel
+                "!=" ->
+                  BoolLabel
+                _ ->
+                  IntLabel
+
+            Block x ->
+              getLabel x
+
+            _ ->
+              UnknownLabel
+    in
+      show $ getLabel expression
