@@ -1,22 +1,6 @@
 {-
 
-A TODO list:
-
- TODO >>>  if stat in either "y" "ye" "yes" then "Ok" else "No"
-
- TODO >>>  stat in either 1 2 3
-
- TOFIX >>> parseAllFactors
-
-
-
 -}
-
-
-
-
-
-
 
 module Parser where
 
@@ -48,13 +32,6 @@ tokenise (' ':rest) = tokenise rest      -- (skip spaces)
 tokenise ('\n':rest) = tokenise rest
 tokenise ('\r':rest) = tokenise rest
 tokenise ('\t':rest) = tokenise rest
-
-{-tokenise ('"':rest)
-  = let
-      (string, _:rest2) = break (=='"') rest
-
-    in
-      (STRING string) : tokenise rest2 -}
 
 tokenise ('"':rest)
   = let
@@ -133,6 +110,9 @@ tokenise ('c':'a':'l':'l':x:rest)
     in 
       CALLALONE n : tokenise rest2
 
+tokenise ('w':'h':'i':'l':'e':x:rest)
+  | not $ isName x = WHILE : tokenise (x:rest)
+
 tokenise ('w':'i':'t':'h':x:rest)
   | not $ isName x =  WITH : tokenise (x:rest)
 
@@ -144,6 +124,9 @@ tokenise ('t':'h':'e':'n':x:rest)
 
 tokenise ('e':'l':'s':'e':x:rest)
   | not $ isName x =  ELSE : tokenise (x:rest)
+
+tokenise ('l':'e':'t':x:rest)
+  | not $ isName x = LET : tokenise (x:rest)
 
 tokenise ('f':'o':'r':x:rest)
   | not $ isName x =  FOR : tokenise (x:rest)
@@ -240,6 +223,18 @@ parseFactors ((OPENPAREN):rest)
     = let
         (paren, restParen) = getRightParentheses rest
 
+        parseCommas [] = []
+        parseCommas pair
+          = let
+              (content, rest) = parseHighExp pair
+
+            in
+              if null rest
+                then
+                  [content]
+                else
+                  content : parseCommas (tail rest)
+
         getRightParentheses xs
           = let
               check (n, acc, (y:[]))
@@ -275,7 +270,12 @@ parseFactors ((OPENPAREN):rest)
             in
               (parenCheck, restCheck)
       in
-        (Parens (fst $ parseHighExp paren), restParen)
+        if (head . snd . parseHighExp $ paren) == COMMA
+          then
+            (Tuple (parseCommas paren), restParen)
+
+          else
+            (Parens (fst $ parseHighExp paren), restParen)
 
 parseFactors ((OPENBRACKETS):rest)
     = let
@@ -287,11 +287,11 @@ parseFactors ((OPENBRACKETS):rest)
               (content, rest) = parseHighExp pair
 
             in
-              if not $ null rest
+              if null rest
                 then
-                  content : parseCommas (tail rest)
-                else
                   [content]
+                else
+                  content : parseCommas (tail rest)
 
         getRightList xs
           = let
@@ -475,6 +475,13 @@ parseHighExp tokens@( prefixToken : restTokens )
 
         in
           (LambdaDef arguments bodyFunction, rest2)
+
+      LET ->
+        let
+          (declarations, IN:rest) = parseAllFactors restTokens
+          (todo, rest2) = parseHighExp rest
+        in
+          (LetIn declarations todo, rest2)
 
       othertokens ->
         parseExp tokens
