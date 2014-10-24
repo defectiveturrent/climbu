@@ -46,26 +46,26 @@ interpret (lines:_)
       generatedCode = genCode lines
 
     in do
-        writeFile ".upsilon.cpp" generatedCode
-        system "g++ -std=c++14 -o.upsilon .upsilon.cpp"
-        system "./.upsilon"
-        system "rm -rf .upsilon"
-        system "rm -rf .upsilon.cpp"
+        writeFile ".Climbu.cpp" generatedCode
+        system "g++ -std=c++14 -o.Climbu .Climbu.cpp"
+        system "./.Climbu"
+        system "rm -rf .Climbu"
+        system "rm -rf .Climbu.cpp"
         return ()
 
 version _
   = do
-      putStrLn "Upsilon compiler v0.1 - Copyright (C) 2014  Mario Feroldi"
+      putStrLn "Climbu compiler v0.4 - Copyright (C) 2014  Mario Feroldi"
       putStrLn "This program comes with ABSOLUTELY NO WARRANTY."
       putStrLn "This is free software, and you are welcome to redistribute it"
       putStrLn "under GPL v3 license.\n"
 
 help _
   = do
-      putStrLn "Usage: uc [option] file...\n"
-      putStrLn "  -c <executable-name> <file>    Compiles an upsilon code"
-      putStrLn "  -x <line>                      Interpret an upsilon code"
+      putStrLn "Usage: climbu [option] file...\n"
+      putStrLn "  -c <bin name> <file>    Compiles a Climbu code"
+      putStrLn "  -x <line>                      Interprets a Climbu code"
       putStrLn "  {-v --version}                 Show version"
       putStrLn "  {-h --help}                    Show help"
       putStrLn []
-      putStrLn "Report bugs to <thelost-t@live.com>"
+      putStrLn "Report bugs to <blueoatstudio@gmail.com>"
