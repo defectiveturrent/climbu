@@ -116,7 +116,7 @@ execute stack
 
 genCode :: String -> String
 genCode stack
-  = "#include \"standard.hpp\"\n\n"
+  = "#include \"include/prelude.hpp\"\n\n"
   ++ (intercalate "\n" . execute . tokenise $ stack)
   ++ "\n\n"
   ++ "int main( int countArgs, char** args )\n"
