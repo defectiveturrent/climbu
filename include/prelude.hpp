@@ -1,5 +1,13 @@
 #pragma once
+#include <iostream>
+#include <cmath>
+#include <vector>
+#include <string>
+#include <cstdint>
 #include <tuple>
+
+using namespace std;
+
 #include "lists.hpp"
 #include "system/io.hpp"
 
@@ -38,3 +46,6 @@ int length ( char* data )
   }
   return 0;
 }
+
+#define fst(tuple) get<0>(tuple)
+#define snd(tuple) get<1>(tuple)
