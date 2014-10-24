@@ -2,6 +2,8 @@ Climbu!
 =
 So, what is Climbu? You can say: "Oh, it might be just another programming language, baah, nothing important." But I say to you: "No!! Okay, it's just another programming language, but it's different." How can it be different from others languages? The Climbu is different because it is not compiled or interpreted, it's Converted.
 
+OBS: The Climbu initially was named "Upsilon", and now is Climbu.
+
 ### What? Converted? Be more specific!
 Yeah, it's converted. The Climbu code, when passing by compiler, is converted to an C++ code, and finally compiled. And, again, you say: "Oh, C++? This language is so powerful..." I did think the same.
 
