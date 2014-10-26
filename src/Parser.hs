@@ -50,10 +50,10 @@ tokenise ('"':rest)
 
 tokenise ('/':'/':rest)             -- (comments)
   = let
-      (_, _:rest2) = break (=='\n') rest
+      (_, rest2) = break (=='\n') rest
 
     in
-      tokenise rest2
+      tokenise (if null rest2 then [] else tail rest2)
 
 tokenise ('(':'*':rest)             -- (comments)
   = let
@@ -109,6 +109,13 @@ tokenise ('c':'a':'l':'l':x:rest)
 
     in 
       CALLALONE n : tokenise rest2
+
+tokenise ('i':'m':'p':'o':'r':'t':x:rest)
+  | not $ isName x
+  = let
+      (path, rest2) = break (==';') rest
+    in
+      IMPORT path : tokenise rest2
 
 tokenise ('w':'h':'i':'l':'e':x:rest)
   | not $ isName x = WHILE : tokenise (x:rest)
@@ -217,6 +224,9 @@ parseFactors ((CONST x):rest)
 
 parseFactors ((CALLALONE x):rest)
     = (Call (Ident x) [], rest)
+
+parseFactors ((IMPORT x):rest)
+    = (Import x, rest)
 
 -- Parse parentheses
 parseFactors ((OPENPAREN):rest)
