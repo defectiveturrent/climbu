@@ -148,7 +148,6 @@ translate inst
                 = if var == Ignore
                     then
                       []
-
                     else
                       "auto " ++ (translate var) ++ " = get<" ++ show n ++ ">(" ++ (translate i2) ++ ")"
 
@@ -159,6 +158,20 @@ translate inst
             in
               intercalate ";\n" $ filter (not . null) vars
 
+          MakeSimpleList list ->
+            let
+              parseList n var
+                = if var == Ignore
+                    then
+                      []
+                    else
+                      "auto " ++ (translate var) ++ " = " ++ (translate i2) ++ "[" ++ show n ++ "]"
+
+              vars = [parseList n var | n   <- [0..] 
+                                      | var <- list
+                                      ]
+            in
+              intercalate ";\n" $ filter (not . null) vars
 
           otherinst ->
             (typeChecker i2) ++ " " ++ (translate i1) ++ " = " ++ (translate i2)
