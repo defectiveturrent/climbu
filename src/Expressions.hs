@@ -12,6 +12,7 @@ data Token
   | ID String  -- Variables, etc
   | STRING String
   | CHAR Char
+  | IMPORT String
   | PLUS
   | MINUS
   | MUL
@@ -94,7 +95,8 @@ data Ast
   | When Ast                           -- Simple condition
   | In Ast Ast                         -- Simple operator, like each
   | For Ast Ast Ast                    -- Specific comprehension list
-  | LetIn [Ast] Ast                    
+  | LetIn [Ast] Ast
+  | Import String
   | Void
   | Eof
   deriving (Show, Read, Eq)
