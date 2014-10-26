@@ -26,11 +26,14 @@ data Inst
   | ConcatList Inst Inst          -- [1, 2] ++ [3, 4]
   | LetStack [Inst]               --
   | TupleInst [Inst]              --
+  | ImportInst String             --
   | TNothing                      -- For empty places
   | Ignore                        -- _
   | Error String                  -- For format errors
   deriving (Show, Read, Eq)
 
+replace wt ch list
+  = map (\x -> if x == wt then ch else x) list
 
 parseAst (Void) = TNothing
 parseAst (Ident "_") = Ignore
@@ -42,6 +45,7 @@ parseAst (Assign e1 e2) = AssignTo (parseAst e1) (parseAst e2)
 parseAst (Take e1 e2) = DoTake (parseAst e1) (parseAst e2)
 parseAst (Expo e1 e2) = CallFunction (PushVar "pow") [parseAst e1, parseAst e2]
 parseAst (Concat e1 e2) = ConcatList (parseAst e1) (parseAst e2)
+parseAst (Import e1) = ImportInst $ (replace '.' '/' e1) ++ ".hpp"
 
 parseAst (Add e1 e2) = Operation "+" (parseAst e1) (parseAst e2)
 parseAst (Sub e1 e2) = Operation "-" (parseAst e1) (parseAst e2)
@@ -112,11 +116,19 @@ execute stack
       outcode = map parseAst paragraphs
 
     in
-      map (\x -> (translate x) ++ ";") outcode
+      map (\x ->
+            let
+              string = (translate x)
+            in
+              if isPrefixOf "#include" string
+                then
+                  string
+                else
+                  string ++ ";") outcode
 
 genCode :: String -> String
 genCode stack
-  = "#include \"include/prelude.hpp\"\n\n"
+  = "#include \"include/prelude.hpp\"\n"
   ++ (intercalate "\n" . execute . tokenise $ stack)
   ++ "\n\n"
   ++ "int main( int countArgs, char** args )\n"
@@ -139,6 +151,9 @@ translate inst
             "'\\''"
           else
             ['\'', x, '\'']
+
+      ImportInst path ->
+        "#include \"include/" ++ path ++ "\""
 
       AssignTo i1 i2 ->
         case i1 of
