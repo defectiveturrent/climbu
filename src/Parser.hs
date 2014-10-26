@@ -480,10 +480,11 @@ parseHighExp tokens@( prefixToken : restTokens )
         parseExp tokens
 
 parseExp :: [Token] -> (Ast, [Token])
+parseExp [] = (Eof, [])
 parseExp tokens
   = let
       checkComma tokens
-        = if head tokens == COMMA
+        = if (not $ null tokens) && (head tokens == COMMA)
           then
             tail tokens
           
