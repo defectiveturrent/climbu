@@ -223,18 +223,6 @@ parseFactors ((OPENPAREN):rest)
     = let
         (paren, restParen) = getRightParentheses rest
 
-        parseCommas [] = []
-        parseCommas pair
-          = let
-              (content, rest) = parseHighExp pair
-
-            in
-              if null rest
-                then
-                  [content]
-                else
-                  content : parseCommas (tail rest)
-
         getRightParentheses xs
           = let
               check (n, acc, (y:[]))
@@ -280,18 +268,6 @@ parseFactors ((OPENPAREN):rest)
 parseFactors ((OPENBRACKETS):rest)
     = let
         (bracket, restBracket) = getRightList rest
-
-        parseCommas [] = []
-        parseCommas pair
-          = let
-              (content, rest) = parseHighExp pair
-
-            in
-              if null rest
-                then
-                  [content]
-                else
-                  content : parseCommas (tail rest)
 
         getRightList xs
           = let
@@ -414,6 +390,21 @@ parseFactors ((EOF):rest)
 parseFactor token
     = fst $ parseFactors [token]
 
+
+-- Parse expressions separated by commas
+parseCommas [] = []
+parseCommas pair
+  = let
+      (content, rest) = parseHighExp pair
+
+    in
+      if null rest
+        then
+          [content]
+        else
+          content : (parseCommas $ tail rest)
+
+
 parseAllFactors tokens'
  = let
     parsef' (ast, tokens)
@@ -428,6 +419,7 @@ parseAllFactors tokens'
               , FOR
               , IN
               , WHEN
+              , COMMA
               , EOF
               ]
 
@@ -480,6 +472,7 @@ parseHighExp tokens@( prefixToken : restTokens )
         let
           (declarations, IN:rest) = parseAllFactors restTokens
           (todo, rest2) = parseHighExp rest
+        
         in
           (LetIn declarations todo, rest2)
 
@@ -489,7 +482,16 @@ parseHighExp tokens@( prefixToken : restTokens )
 parseExp :: [Token] -> (Ast, [Token])
 parseExp tokens
   = let
+      checkComma tokens
+        = if head tokens == COMMA
+          then
+            tail tokens
+          
+          else
+            tokens
+
       (factortree, rest) = parseFactors tokens
+
     in
       case rest of
         (FOR : rest2) ->
@@ -514,7 +516,13 @@ parseExp tokens
                         (For result counting condition, finalrest)
 
                     other ->
-                      (For factortree (In var range) (When Void), other)
+                      let
+                        result = factortree
+                        counting = In var range
+                        condition = When Void
+
+                      in
+                        (For factortree counting condition, other)
 
               other ->
                 (factortree, other)
@@ -523,129 +531,129 @@ parseExp tokens
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Assign factortree subexptree, rest3 )
+            ( Assign factortree subexptree, checkComma rest3 )
 
         (PLUS : rest2) -> 
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Add factortree subexptree, rest3 )
+            ( Add factortree subexptree, checkComma rest3 )
 
         (MINUS : rest2) -> 
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Sub factortree subexptree, rest3 )
+            ( Sub factortree subexptree, checkComma rest3 )
 
         (MUL : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Mul factortree subexptree, rest3 )
+            ( Mul factortree subexptree, checkComma rest3 )
 
         (DIV : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Div factortree subexptree, rest3 )
+            ( Div factortree subexptree, checkComma rest3 )
 
         (GREATERTHAN : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Grt factortree subexptree, rest3 )
+            ( Grt factortree subexptree, checkComma rest3 )
 
         (GREATEREQUAL : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Ge factortree subexptree, rest3 )
+            ( Ge factortree subexptree, checkComma rest3 )
 
         (LESSTHAN : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Let factortree subexptree, rest3 )
+            ( Let factortree subexptree, checkComma rest3 )
 
         (LESSEQUAL : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Le factortree subexptree, rest3 )
+            ( Le factortree subexptree, checkComma rest3 )
 
         (EQUAL : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Equ factortree subexptree, rest3 )
+            ( Equ factortree subexptree, checkComma rest3 )
         
         (NOT : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Not factortree subexptree, rest3 )
+            ( Not factortree subexptree, checkComma rest3 )
 
         (MOD : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Mod factortree subexptree, rest3 )
+            ( Mod factortree subexptree, checkComma rest3 )
 
         (WITH : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Call factortree [subexptree], rest3 )
+            ( Call factortree [subexptree], checkComma rest3 )
 
         (COUNTLIST : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( CountList factortree subexptree, rest3)
+            ( CountList factortree subexptree, checkComma rest3)
 
         (CALLARGS : rest2) ->
           let
             (subexptree, rest3) = parseAllFactors rest2
           in
-            ( Call factortree subexptree, rest3)
+            ( Call factortree subexptree, checkComma rest3 )
 
         (TAKE : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Take factortree subexptree, rest3 )
+            ( Take factortree subexptree, checkComma rest3 )
 
         (EXPO : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Expo factortree subexptree, rest3 )
+            ( Expo factortree subexptree, checkComma rest3 )
 
         (CONCATLIST : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Concat factortree subexptree, rest3 )
+            ( Concat factortree subexptree, checkComma rest3 )
 
         (OPCALLFUNC n : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Call (Ident n) [factortree, subexptree], rest3)
+            ( Call (Ident n) [factortree, subexptree], checkComma rest3 )
 
         (ISEITHER : rest2) ->
           let
             (subexptree, rest3) = parseAllFactors rest2
 
           in
-            (IsEither factortree subexptree, rest3)
+            ( IsEither factortree subexptree, checkComma rest3 )
 
         (ISNEITHER : rest2) ->
           let
             (subexptree, rest3) = parseAllFactors rest2
 
           in
-            (IsNeither factortree subexptree, rest3)
+            ( IsNeither factortree subexptree, checkComma rest3 )
 
         -- Like an 'otherwise'
         othertokens ->   -- TODO
