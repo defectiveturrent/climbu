@@ -53,6 +53,7 @@ data Token
   | WHEN
   | FUNC
   | TAKE
+  | LISTPATTERNMATCHING
   | VOID
   | EOF  -- End of line
   deriving (Show, Read, Eq)
@@ -87,16 +88,17 @@ data Ast
   | ComprehensionList [Ast]            -- ComprehensionList [DATES] // [1, 2, 3]
   | LambdaDef [Ast] Ast                -- LambdaDef [ARGS] BODY // {n = n + foo}
   | Call Ast [Ast]                     -- ID [ARGS]
-  | Then Ast
-  | Else Ast
+  | Then Ast                           -- The 'then' part of 'if' block
+  | Else Ast                           -- The 'else' part of 'if' block
   | Condition Ast Ast Ast              -- (Condition ast) (Then ast) (Else ast)
   | IsEither Ast [Ast]                 -- n in either 1 2 3
   | IsNeither Ast [Ast]                 -- n in either 1 2 3
   | When Ast                           -- Simple condition
   | In Ast Ast                         -- Simple operator, like each
   | For Ast Ast Ast                    -- Specific comprehension list
-  | LetIn [Ast] Ast
-  | Import String
-  | Void
-  | Eof
+  | LetIn [Ast] Ast                    -- An expression that allows to make more expressions in a single block
+  | Import String                      -- To import a library
+  | ListPM [Ast] Ast                   -- A list's pattern matching operator (:) ( [Head] Tail )
+  | Void                               -- Used to stuff something empty
+  | Eof                                -- used to end a complete expression
   deriving (Show, Read, Eq)
