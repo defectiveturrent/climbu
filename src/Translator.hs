@@ -26,6 +26,7 @@ data Inst
   | ConcatList Inst Inst          -- [1, 2] ++ [3, 4]
   | LetStack [Inst]               --
   | TupleInst [Inst]              --
+  | ListPMInst [Inst] Inst        --
   | ImportInst String             --
   | TNothing                      -- For empty places
   | Ignore                        -- _
@@ -99,6 +100,7 @@ parseAst (IsEither e1 e2) = CallFunction (PushVar "elem") [parseAst e1, MakeSimp
 parseAst (IsNeither e1 e2) = Block $ CallFunction (PushVar "!elem") [parseAst e1, MakeSimpleList $ map parseAst e2]
 parseAst (LetIn e1 e2) = LetStack $ map parseAst (e1 ++ [e2])
 parseAst (Tuple e) = TupleInst $ map parseAst e
+parseAst (ListPM e1 e2) = ListPMInst (map parseAst e1) (parseAst e2)
 parseAst _ = TNothing
 
 
@@ -180,13 +182,21 @@ translate inst
                     then
                       []
                     else
-                      "auto " ++ (translate var) ++ " = " ++ (translate i2) ++ "[" ++ show n ++ "]"
+                      translate $ AssignTo var (DoTake i2 (PushConst . show $ n))
 
               vars = [parseList n var | n   <- [0..] 
                                       | var <- list
                                       ]
             in
               intercalate ";\n" $ filter (not . null) vars
+
+          ListPMInst heads rtail ->
+            let
+              hInst = translate $ AssignTo (MakeSimpleList heads) i2
+              tInst = translate $ AssignTo rtail ( CallFunction (PushVar "takesince") [i2, PushConst . show . length $ heads] )
+
+            in
+              hInst ++ ";\n" ++ tInst
 
           otherinst ->
             (typeChecker i2) ++ " " ++ (translate i1) ++ " = " ++ (translate i2)
