@@ -115,3 +115,13 @@ template<class t>
 
   return res;
 }
+
+template<class t>
+  vector<t> takeSince ( const vector<t>$ list, int n )
+{
+  vector<t> res;
+  for( int i = n; i < list.size(); ++i )
+    res.emplace_back( list[i] );
+
+  return res;
+}
