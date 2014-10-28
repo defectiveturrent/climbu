@@ -67,33 +67,34 @@ tokenise ('(':'*':rest)             -- (comments)
     in
       subtokenise rest
 
-tokenise (';':rest) = EOF : tokenise rest
-tokenise ('(':rest) = OPENPAREN : tokenise rest
-tokenise (')':rest) = CLOSEPAREN : tokenise rest
-tokenise ('[':rest) = OPENBRACKETS : tokenise rest
-tokenise (']':rest) = CLOSEBRACKETS : tokenise rest
-tokenise ('{':rest) = OPENKEYS : tokenise rest
-tokenise ('}':rest) = CLOSEKEYS : tokenise rest
+tokenise (';':rest)         = EOF : tokenise rest
+tokenise ('(':rest)         = OPENPAREN : tokenise rest
+tokenise (')':rest)         = CLOSEPAREN : tokenise rest
+tokenise ('[':rest)         = OPENBRACKETS : tokenise rest
+tokenise (']':rest)         = CLOSEBRACKETS : tokenise rest
+tokenise ('{':rest)         = OPENKEYS : tokenise rest
+tokenise ('}':rest)         = CLOSEKEYS : tokenise rest
 tokenise ('\'':x:'\'':rest) = CHAR x : tokenise rest
-tokenise ('.':'.':rest) = COUNTLIST : tokenise rest
-tokenise ('.':rest) = CALLARGS : tokenise rest
-tokenise ('+':'+':rest) = CONCATLIST : tokenise rest
-tokenise ('+':rest) = PLUS : tokenise rest
-tokenise ('-':rest) = MINUS : tokenise rest
-tokenise ('*':rest) = MUL : tokenise rest
-tokenise ('/':'=':rest) = NOT : tokenise rest
-tokenise ('/':rest) = DIV : tokenise rest
-tokenise ('%':rest) = MOD : tokenise rest
-tokenise ('^':rest) = EXPO : tokenise rest
-tokenise ('|':'>':rest) =  TAKE : tokenise rest
-tokenise ('>':'=':rest) = GREATEREQUAL : tokenise rest
-tokenise ('>':rest) = GREATERTHAN : tokenise rest
-tokenise ('<':'=':rest) = LESSEQUAL : tokenise rest
-tokenise ('<':rest) = LESSTHAN : tokenise rest
-tokenise ('=':'=':rest) = EQUAL : tokenise rest
-tokenise ('=':rest) = ASSIGN : tokenise rest
-tokenise (',':rest) = COMMA : tokenise rest
-tokenise ('|':rest) = ELSE : IF : tokenise rest
+tokenise ('.':'.':rest)     = COUNTLIST : tokenise rest
+tokenise ('.':rest)         = CALLARGS : tokenise rest
+tokenise ('+':'+':rest)     = CONCATLIST : tokenise rest
+tokenise ('+':rest)         = PLUS : tokenise rest
+tokenise ('-':rest)         = MINUS : tokenise rest
+tokenise ('*':rest)         = MUL : tokenise rest
+tokenise ('/':'=':rest)     = NOT : tokenise rest
+tokenise ('/':rest)         = DIV : tokenise rest
+tokenise ('%':rest)         = MOD : tokenise rest
+tokenise ('^':rest)         = EXPO : tokenise rest
+tokenise ('|':'>':rest)     = TAKE : tokenise rest
+tokenise ('>':'=':rest)     = GREATEREQUAL : tokenise rest
+tokenise ('>':rest)         = GREATERTHAN : tokenise rest
+tokenise ('<':'=':rest)     = LESSEQUAL : tokenise rest
+tokenise ('<':rest)         = LESSTHAN : tokenise rest
+tokenise ('=':'=':rest)     = EQUAL : tokenise rest
+tokenise ('=':rest)         = ASSIGN : tokenise rest
+tokenise (',':rest)         = COMMA : tokenise rest
+tokenise ('|':rest)         = ELSE : IF : tokenise rest
+tokenise (':':rest)         = LISTPATTERNMATCHING : tokenise rest
 
 tokenise ('`':rest)
   = let
@@ -231,6 +232,7 @@ parseFactors ((IMPORT x):rest)
 -- Parse parentheses
 parseFactors ((OPENPAREN):rest)
     = let
+        -- [Token], [Token]
         (paren, restParen) = getRightParentheses rest
 
         getRightParentheses xs
@@ -268,12 +270,25 @@ parseFactors ((OPENPAREN):rest)
             in
               (parenCheck, restCheck)
       in
-        if (head . snd . parseHighExp $ paren) == COMMA
-          then
-            (Tuple (parseCommas paren), restParen)
+        let
+          -- get the head of rest of tokens and checks if there's a comma (below)
+          (parsedExpression, restTokens) = parseHighExp paren
+        in
+          case head restTokens of
+            COMMA ->
+              (Tuple (parseSeparators paren), restParen)
 
-          else
-            (Parens (fst $ parseHighExp paren), restParen)
+            LISTPATTERNMATCHING ->
+              let
+                factors = parseSeparators paren
+                heads = init factors
+                rtail = last factors
+
+              in
+                (ListPM heads rtail, restParen)
+
+            other ->
+              (Parens parsedExpression, restParen)
 
 parseFactors ((OPENBRACKETS):rest)
     = let
@@ -314,7 +329,7 @@ parseFactors ((OPENBRACKETS):rest)
             in
               (listCheck, restCheck)
       in
-        (ComprehensionList (parseCommas $ bracket), restBracket)
+        (ComprehensionList (parseSeparators $ bracket), restBracket)
 
 parseFactors ((OPENKEYS):rest)
     = let
@@ -402,8 +417,8 @@ parseFactor token
 
 
 -- Parse expressions separated by commas
-parseCommas [] = []
-parseCommas pair
+parseSeparators [] = []
+parseSeparators pair
   = let
       (content, rest) = parseHighExp pair
 
@@ -412,7 +427,7 @@ parseCommas pair
         then
           [content]
         else
-          content : (parseCommas $ tail rest)
+          content : (parseSeparators $ tail rest)
 
 
 parseAllFactors tokens'
