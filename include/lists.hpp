@@ -117,7 +117,7 @@ template<class t>
 }
 
 template<class t>
-  vector<t> takeSince ( const vector<t>$ list, int n )
+  vector<t> takeSince ( const vector<t>& list, int n )
 {
   vector<t> res;
   for( int i = n; i < list.size(); ++i )
