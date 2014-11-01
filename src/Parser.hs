@@ -33,6 +33,8 @@ tokenise ('\n':rest) = tokenise rest
 tokenise ('\r':rest) = tokenise rest
 tokenise ('\t':rest) = tokenise rest
 
+tokenise ('"':'"':rest) = NULLSTRING : tokenise rest
+
 tokenise ('"':rest)
   = let
       subtokenise ('\\' : '"' : rest2) acc
@@ -102,6 +104,12 @@ tokenise ('`':rest)
 
     in
       OPCALLFUNC n : tokenise rest2
+
+tokenise ('n':'u':'l':'l':[]) = [NULL]
+
+tokenise ('n':'u':'l':'l':x:rest)
+  | not $ isName x
+  = NULL : tokenise (x:rest)
 
 tokenise ('c':'a':'l':'l':x:rest)
   | not $ isName x
@@ -229,6 +237,23 @@ parseFactors ((CALLALONE x):rest)
 parseFactors ((IMPORT x):rest)
     = (Import x, rest)
 
+parseFactors ((NULLSTRING):rest)
+    = (Special NuS, rest)
+
+parseFactors ((NULL):rest)
+    = (Special Null, rest)
+
+parseFactors ((OPENPAREN):(CLOSEPAREN):rest)
+    = (Special NuT, rest)
+
+parseFactors (OPENPAREN:MINUS:rest)
+    = let
+        factor = OPENPAREN : rest
+        (parsed, rest2) = parseFactors factor
+
+      in
+        (Negate parsed, rest2)
+
 -- Parse parentheses
 parseFactors ((OPENPAREN):rest)
     = let
@@ -289,6 +314,9 @@ parseFactors ((OPENPAREN):rest)
 
             other ->
               (Parens parsedExpression, restParen)
+
+parseFactors ((OPENBRACKETS):(CLOSEBRACKETS):rest)
+    = (Special NuL, rest)
 
 parseFactors ((OPENBRACKETS):rest)
     = let
@@ -412,6 +440,9 @@ parseFactors ((WHEN):rest)
 parseFactors ((EOF):rest)
     = (Eof, rest)
 
+parseFactors (_:rest)
+    = (Special Undefined, rest)
+
 parseFactor token
     = fst $ parseFactors [token]
 
@@ -510,11 +541,11 @@ parseExp tokens
   = let
       checkComma tokens
         = if (not $ null tokens) && (head tokens == COMMA)
-          then
-            tail tokens
-          
-          else
-            tokens
+            then
+              tail tokens
+            
+            else
+              tokens
 
       (factortree, rest) = parseFactors tokens
 
@@ -581,7 +612,13 @@ parseExp tokens
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Div factortree subexptree, checkComma rest3 )
+            ( (case subexptree of
+                Num 0 ->
+                  Special Infinite
+
+                _ ->
+                  Div factortree subexptree
+            ), checkComma rest3 )
 
         (GREATERTHAN : rest2) ->
           let
