@@ -54,7 +54,7 @@ compile (executable:pathsource:_)
 
 interpret (lines:_)
   = let
-      generatedCode = genCode lines
+      generatedCode = genCode $ "def main = println . " ++ lines
 
     in do
         writeFile ".Climbu.cpp" generatedCode
@@ -66,7 +66,7 @@ interpret (lines:_)
 
 version _
   = do
-      putStrLn "Climbu compiler v0.5 - Copyright (C) 2014  Mario Feroldi"
+      putStrLn "Climbu compiler v0.6 - Copyright (C) 2014  Mario Feroldi"
       putStrLn "This program comes with ABSOLUTELY NO WARRANTY."
       putStrLn "This is free software, and you are welcome to redistribute it"
       putStrLn "under GPL v3 license.\n"
