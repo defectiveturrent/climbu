@@ -29,6 +29,15 @@ template< class t,
   return res;
 }
 
+vector<char> countlist ( char min, char max )
+{
+  vector<char> res;
+  for ( char i = min; i <= max; ++i )
+    res.emplace_back(i);
+
+  return res;
+}
+
 vector<int> countlist ( int min, int max )
 {
   vector<int> res;
