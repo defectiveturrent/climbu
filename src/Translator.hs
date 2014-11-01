@@ -28,6 +28,7 @@ data Inst
   | TupleInst [Inst]              --
   | ListPMInst [Inst] Inst        --
   | ImportInst String             --
+  | NegateInst Inst               --
   | TNothing                      -- For empty places
   | Ignore                        -- _
   | Error String                  -- For format errors
@@ -37,6 +38,7 @@ replace wt ch list
   = map (\x -> if x == wt then ch else x) list
 
 parseAst (Void) = TNothing
+parseAst (Call (Num a) [(Num b)]) = PushConst $ (show a) ++ "." ++ (show b) ++ "f"
 parseAst (Ident "_") = Ignore
 parseAst (Ident x) = PushVar x
 parseAst (CharString x) = MakeSimpleList $ map PushChar x
@@ -47,6 +49,7 @@ parseAst (Take e1 e2) = DoTake (parseAst e1) (parseAst e2)
 parseAst (Expo e1 e2) = CallFunction (PushVar "pow") [parseAst e1, parseAst e2]
 parseAst (Concat e1 e2) = ConcatList (parseAst e1) (parseAst e2)
 parseAst (Import e1) = ImportInst $ (replace '.' '/' e1) ++ ".hpp"
+parseAst (Negate e1) = NegateInst $ parseAst e1
 
 parseAst (Add e1 e2) = Operation "+" (parseAst e1) (parseAst e2)
 parseAst (Sub e1 e2) = Operation "-" (parseAst e1) (parseAst e2)
@@ -101,6 +104,7 @@ parseAst (IsNeither e1 e2) = Block $ CallFunction (PushVar "!elem") [parseAst e1
 parseAst (LetIn e1 e2) = LetStack $ map parseAst (e1 ++ [e2])
 parseAst (Tuple e) = TupleInst $ map parseAst e
 parseAst (ListPM e1 e2) = ListPMInst (map parseAst e1) (parseAst e2)
+parseAst (Special x) = PushVar $ show x
 parseAst _ = TNothing
 
 
@@ -157,6 +161,9 @@ translate inst
       ImportInst path ->
         "#include \"include/" ++ path ++ "\""
 
+      NegateInst x ->
+        "(-" ++ translate x ++ ")"
+
       AssignTo i1 i2 ->
         case i1 of
           TupleInst list ->
@@ -202,7 +209,7 @@ translate inst
             (typeChecker i2) ++ " " ++ (translate i1) ++ " = " ++ (translate i2)
 
       Operation op i1 i2 ->
-        (translate i1) ++ op ++ (translate i2)
+        (translate i1) ++ op ++ "(float)" ++ (translate i2)
 
       ForList var fresult range fcondition ->
         "eachlist(" ++ (translate fresult) ++ ", " ++ (translate range) ++ ", " ++ (translate fcondition) ++ ")"
@@ -322,7 +329,7 @@ getdefn var db
 
 data Label
   = IntLabel
-  | DoubleLabel
+  | FloatLabel
   | CharLabel
   | BoolLabel
   | List Label
@@ -332,7 +339,7 @@ data Label
 instance Show Label
   where
     show IntLabel = "int"
-    show DoubleLabel = "double"
+    show FloatLabel = "float"
     show CharLabel = "char"
     show BoolLabel = "bool"
     show (List label) = "vector<" ++ show label ++ ">"
@@ -391,6 +398,8 @@ typeChecker expression
                   BoolLabel
                 "!=" ->
                   BoolLabel
+                "/" ->
+                  FloatLabel
                 _ ->
                   IntLabel
 
