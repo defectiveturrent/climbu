@@ -209,7 +209,7 @@ translate inst
             (typeChecker i2) ++ " " ++ (translate i1) ++ " = " ++ (translate i2)
 
       Operation op i1 i2 ->
-        (translate i1) ++ op ++ "(float)" ++ (translate i2)
+        (translate i1) ++ op ++ (if op == "/" then "(float)" else []) ++ (translate i2)
 
       ForList var fresult range fcondition ->
         "eachlist(" ++ (translate fresult) ++ ", " ++ (translate range) ++ ", " ++ (translate fcondition) ++ ")"
