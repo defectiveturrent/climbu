@@ -8,14 +8,25 @@
 
 using namespace std;
 
-#include "lists.hpp"
-#include "system/io.hpp"
-
 //
 // Structured definition
 //
 
 typedef int32_t USTDFUNC;
+
+enum SpecialDate_t
+{
+  Undefined, // Represented for undefined stuffs
+  NaN,       // Not a Number
+  Infinite,  // Infinite evaluation
+  NuL,       // Null List
+  NuT,       // Null Tuple
+  NuS,       // Null String
+  Null       // Null for all
+};
+
+#include "lists.hpp"
+#include "system/io.hpp"
 
 template<class t>
   t sum( const vector<t>& list )
