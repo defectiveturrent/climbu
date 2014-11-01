@@ -8,8 +8,9 @@ import Data.List
 -- Tokens data type
 --
 data Token
-  = CONST Int  -- Numbers, const variables, etc
-  | ID String  -- Variables, etc
+  = CONST Int
+  | CONSTF Float
+  | ID String
   | STRING String
   | CHAR Char
   | IMPORT String
@@ -54,6 +55,8 @@ data Token
   | FUNC
   | TAKE
   | LISTPATTERNMATCHING
+  | NULLSTRING
+  | NULL
   | VOID
   | EOF  -- End of line
   deriving (Show, Read, Eq)
@@ -82,7 +85,8 @@ data Ast
   | Ident String                       -- VAR
   | CharString String                  -- A string
   | CharByte Char                      -- A character
-  | Num Int                            -- NUMBER
+  | Num Int                            -- Integer number
+  | Numf Float                         -- Float number
   | Parens Ast                         -- ( )
   | Tuple [Ast]                        -- (a, 7, "hello")
   | ComprehensionList [Ast]            -- ComprehensionList [DATES] // [1, 2, 3]
@@ -99,6 +103,18 @@ data Ast
   | LetIn [Ast] Ast                    -- An expression that allows to make more expressions in a single block
   | Import String                      -- To import a library
   | ListPM [Ast] Ast                   -- A list's pattern matching operator (:) ( [Head] Tail )
+  | Negate Ast                         --
+  | Special SpecialDate                --
   | Void                               -- Used to stuff something empty
   | Eof                                -- used to end a complete expression
   deriving (Show, Read, Eq)
+
+data SpecialDate
+  = Undefined
+  | NaN
+  | Infinite
+  | NuL
+  | NuT
+  | NuS
+  | Null
+  deriving(Show, Read, Eq, Enum)
