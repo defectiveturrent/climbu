@@ -12,8 +12,6 @@ using namespace std;
 // Structured definition
 //
 
-typedef int32_t USTDFUNC;
-
 template< class t,
           class function,
           class condition >
