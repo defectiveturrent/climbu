@@ -14,7 +14,8 @@ data Inst
   | PushChar Char
   | AssignTo Inst Inst
   | Operation String Inst Inst
-  | ForList Inst Inst Inst Inst   -- Var; Result; Ranges; Condition.
+  | ForList Inst Inst Inst Inst -- Var; Result; Ranges; Condition.
+  | Range Inst Inst               -- x in list
   | MakeCountList Inst Inst
   | MakeSimpleList [Inst]
   | Block Inst
@@ -64,14 +65,16 @@ parseAst (Not e1 e2) = Operation "!=" (parseAst e1) (parseAst e2)
 parseAst (Ge  e1 e2) = Operation ">=" (parseAst e1) (parseAst e2)
 parseAst (Le  e1 e2) = Operation "<=" (parseAst e1) (parseAst e2)
 
+parseAst (In e1 e2) = Range (parseAst e1) (parseAst e2)
+
 parseAst (For e1 e2 e3)
   = let
-      (In var range) = e2
       (When condition) = e3
 
-      var' = parseAst var
+      ranges = parseAst e2
+      range = (\(Range _ l) -> l) ranges
+      var' = (\(Range x _) -> x) ranges
       result' = parseAst e1
-      range' = parseAst range
       condition' = case condition of
                     Void ->
                       PushConst "true"
@@ -80,7 +83,7 @@ parseAst (For e1 e2 e3)
                       parseAst condition
 
     in
-      ForList var' (Lambda [var'] result') range' (Lambda [var'] condition')
+      ForList var' (Lambda [var'] result') range (Lambda [var'] condition')
 
 parseAst (ComprehensionList [CountList e1 e2]) = MakeCountList (parseAst e1) (parseAst e2)
 
@@ -135,7 +138,7 @@ execute stack
 genCode :: String -> String
 genCode stack
   = "#include \"include/prelude.hpp\"\n"
-  ++ (intercalate "\n" . execute . tokenise $ stack)
+  ++ (intercalate "\n" . execute . tokenRevision . tokenise $ stack)
   ++ "\n\n"
   ++ "int main( int countArgs, char** args )\n"
   ++ "{\n"
@@ -211,8 +214,9 @@ translate inst
       Operation op i1 i2 ->
         (translate i1) ++ op ++ (if op == "/" then "(float)" else []) ++ (translate i2)
 
-      ForList var fresult range fcondition ->
-        "eachlist(" ++ (translate fresult) ++ ", " ++ (translate range) ++ ", " ++ (translate fcondition) ++ ")"
+      -- TOFIX
+      ForList var fresult ranges fcondition ->
+        "eachlist(" ++ (translate fresult) ++ ", " ++ (translate ranges) ++ ", " ++ (translate fcondition) ++ ")"
 
       MakeCountList min_ max_ ->
         "countlist(" ++ (translate min_) ++ ", " ++ (translate max_) ++ ")"
