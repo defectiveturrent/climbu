@@ -12,8 +12,6 @@ using namespace std;
 // Structured definition
 //
 
-typedef int32_t USTDFUNC;
-
 enum SpecialDate_t
 {
   Undefined, // Represented for undefined stuffs
@@ -22,7 +20,8 @@ enum SpecialDate_t
   NuL,       // Null List
   NuT,       // Null Tuple
   NuS,       // Null String
-  Null       // Null for all
+  Null,      // Null for all
+  Void       // Void space
 };
 
 #include "lists.hpp"
