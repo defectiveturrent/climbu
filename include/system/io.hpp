@@ -13,13 +13,13 @@ using namespace std;
 // Structured definition
 //
 
-typedef int32_t USTDFUNC;
+typedef SpecialDate_t USTDFUNC;
 
 //
 // Print functions
 //
 
-USTDFUNC print ( SpecialDate_t msg )
+SpecialDate_t print ( SpecialDate_t msg )
 {
   switch( msg )
   {
@@ -51,39 +51,35 @@ USTDFUNC print ( SpecialDate_t msg )
       std::cout << "null";
       break;
 
+    case Void:
+      break;
+
     default:
-      return 1;
+      return Undefined;
   };
-  return 0;
+  return Void;
 }
 
 USTDFUNC print ( int msg )
 {
-  return cout << msg, 0;
+  return cout << msg, Void;
 }
 
 USTDFUNC print ( char msg )
 {
-  return cout << msg, 0;
+  return cout << msg, Void;
 }
 
 USTDFUNC print ( const vector<char>& msg )
 {
   for( auto ch: msg )
     print(ch);
-  return 0;
+  return Void;
 }
 
 USTDFUNC print ( float msg )
 {
-  return cout << msg, 0;
-}
-
-template<class a, class b>
-  USTDFUNC print ( const tuple<a, b>& pair )
-{
-  std::cout << '(' << get<0>(pair) << ',' << get<1>(pair) << ')';
-  return 0;
+  return cout << msg, Void;
 }
 
 template<class t>
@@ -97,6 +93,16 @@ template<class t>
       print(',');
   }
   return print(']');
+}
+
+template<class a, class b>
+  USTDFUNC print ( const tuple<a, b>& pair )
+{
+  print('(');
+  print(get<0>(pair));
+  print(',');
+  print(get<1>(pair));
+  return print(')');
 }
 
 //
