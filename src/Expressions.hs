@@ -4,6 +4,8 @@ import Data.Char
 import Data.Maybe
 import Data.List
 
+type Tokens = [Token]
+type Asts = [Ast]
 
 -- Tokens data type
 --
@@ -14,6 +16,7 @@ data Token
   | STRING String
   | CHAR Char
   | IMPORT String
+  | ARROW
   | PLUS
   | MINUS
   | MUL
@@ -99,7 +102,7 @@ data Ast
   | IsNeither Ast [Ast]                 -- n in either 1 2 3
   | When Ast                           -- Simple condition
   | In Ast Ast                         -- Simple operator, like each
-  | For Ast Ast Ast                    -- Specific comprehension list
+  | For Ast Ast Ast                  -- Specific comprehension list
   | LetIn [Ast] Ast                    -- An expression that allows to make more expressions in a single block
   | Import String                      -- To import a library
   | ListPM [Ast] Ast                   -- A list's pattern matching operator (:) ( [Head] Tail )
@@ -118,3 +121,34 @@ data SpecialDate
   | NuS
   | Null
   deriving(Show, Read, Eq, Enum)
+
+
+eofers
+  = [ CLOSEPAREN
+    , CLOSEBRACKETS
+    , CLOSEKEYS
+    , IF
+    , THEN
+    , ELSE
+    , LET
+    , FOR
+    , IN
+    , WHEN
+    , CALLARGS
+    , COMMA
+    , EOF
+    , PLUS
+    , MINUS
+    , MUL
+    , DIV
+    , GREATERTHAN
+    , GREATEREQUAL
+    , LESSTHAN
+    , LESSEQUAL
+    , EQUAL
+    , NOT
+    , MOD
+    , EXPO
+    , FUNC
+    , ASSIGN
+    ]
