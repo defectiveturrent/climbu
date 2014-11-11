@@ -136,6 +136,8 @@ eofers
     , WHEN
     , CALLARGS
     , COMMA
+    , LISTPATTERNMATCHING
+    , COUNTLIST
     , EOF
     , PLUS
     , MINUS
