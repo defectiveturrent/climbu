@@ -16,7 +16,8 @@ data Token
   | STRING String
   | CHAR Char
   | IMPORT String
-  | ARROW
+  | RARROW
+  | LARROW
   | PLUS
   | MINUS
   | MUL
@@ -127,6 +128,8 @@ eofers
   = [ CLOSEPAREN
     , CLOSEBRACKETS
     , CLOSEKEYS
+    , RARROW
+    , LARROW
     , IF
     , THEN
     , ELSE
@@ -136,6 +139,7 @@ eofers
     , WHEN
     , CALLARGS
     , COMMA
+    , COMMENT
     , LISTPATTERNMATCHING
     , COUNTLIST
     , EOF
@@ -153,4 +157,7 @@ eofers
     , EXPO
     , FUNC
     , ASSIGN
+    , ISEITHER
+    , ISNEITHER
+    , CONCATLIST
     ]
