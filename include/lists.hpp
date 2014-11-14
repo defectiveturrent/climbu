@@ -12,6 +12,15 @@ using namespace std;
 // Structured definition
 //
 
+#define List vector
+
+typedef vector<char> String;
+
+String mkstr(const string& str )
+{
+  return String(str.begin(), str.end());
+}
+
 template< class t,
           class function,
           class condition >
@@ -113,10 +122,19 @@ template<class t>
   return res;
 }
 
-template<class t>
-  bool elem( const t& element, const vector<t>& list )
+bool elem( char element, const String & list )
 {
-  bool res;
+  bool res = false;
+  for( auto l: list )
+    res = element == l ? true : res;
+
+  return res;
+}
+
+template<class t>
+  bool elem( t element, const vector<t> & list )
+{
+  bool res = false;
   for( auto l: list )
     res = element == l ? true : res;
 
@@ -131,4 +149,32 @@ template<class t>
     res.emplace_back( list[i] );
 
   return res;
+}
+
+List<String> words ( const String & list )
+{
+  if( !elem(0x20, list)
+   || !elem(0x09, list)
+   || !elem(0x0B, list) )
+  {
+    return List<String>({list});
+  }
+  
+  String text;
+  List<String> worded;
+
+  for( auto l: list )
+  {
+    if( l == 0x20 || l == 0x09 || l == 0x0B )
+    {
+      worded.emplace_back( text );
+      text.clear();
+      continue;
+    }
+
+    text.emplace_back(l);
+  }
+
+  worded.emplace_back( text );
+  return worded;
 }
