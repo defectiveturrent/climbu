@@ -74,7 +74,8 @@ tokenise ('(':'*':rest)             -- (comments)
       subtokenise rest
 
 tokenise (';':rest)         = EOF : tokenise rest
-tokenise ('-':'>':rest)     = ARROW : tokenise rest
+tokenise ('<':'-':rest)     = LARROW : tokenise rest
+tokenise ('-':'>':rest)     = RARROW : tokenise rest
 tokenise ('(':rest)         = OPENPAREN : tokenise rest
 tokenise (')':rest)         = CLOSEPAREN : tokenise rest
 tokenise ('[':rest)         = OPENBRACKETS : tokenise rest
@@ -222,9 +223,21 @@ tokenRevision (FUNC:rest)
 
 tokenRevision (LAMBDA:rest)
   = let
-      (body, rest2) = break (==ARROW) rest
+      (body, rest2) = break (==RARROW) rest
     in
       LAMBDA : body ++ tokenRevision rest2
+
+tokenRevision (ISEITHER:rest)
+  = let
+      (body, rest2) = break (==THEN) rest
+    in
+      ISEITHER : body ++ tokenRevision rest2
+
+tokenRevision (ISNEITHER:rest)
+  = let
+      (body, rest2) = break (==THEN) rest
+    in
+      ISNEITHER : body ++ tokenRevision rest2
 
 tokenRevision ((ID x):rest)
   = let
@@ -261,145 +274,145 @@ parseFactors :: [Token] -> (Ast, [Token])
 
 -- Parse idents
 parseFactors ((ID x):rest)
-    = (Ident x, rest)
+  = (Ident x, rest)
 
 parseFactors ((STRING str):rest)
-    = (CharString str, rest)
+  = (CharString str, rest)
 
 parseFactors ((CHAR ch):rest)
-    = (CharByte ch, rest)
+  = (CharByte ch, rest)
 
 -- Parse numbers
 parseFactors ((CONST x):rest)
-    = (Num x, rest)
+  = (Num x, rest)
 
 parseFactors ((CALLALONE x):rest)
-    = (Call (Ident x) [], rest)
+  = (Call (Ident x) [], rest)
 
 parseFactors ((IMPORT x):rest)
-    = (Import x, rest)
+  = (Import x, rest)
 
 parseFactors ((NULLSTRING):rest)
-    = (Special NuS, rest)
+  = (Special NuS, rest)
 
 parseFactors ((NULL):rest)
-    = (Special Null, rest)
+  = (Special Null, rest)
 
 parseFactors ((OPENPAREN):(CLOSEPAREN):rest)
-    = (Special NuT, rest)
+  = (Special NuT, rest)
 
 parseFactors (OPENPAREN:MINUS:rest)
-    = let
-        factor = OPENPAREN : rest
-        (parsed, rest2) = parseFactors factor
+  = let
+      factor = OPENPAREN : rest
+      (parsed, rest2) = parseFactors factor
 
-      in
-        (Negate parsed, rest2)
+    in
+      (Negate parsed, rest2)
 
 -- Parse parentheses
 parseFactors ((OPENPAREN):rest)
-    = let
-        -- [Token], [Token]
-        (paren, restParen) = getRightParentheses rest
+  = let
+      -- [Token], [Token]
+      (paren, restParen) = getRightParentheses rest
 
-        getRightParentheses xs
-          = let
-              check (n, acc, (y:[]))
-                = case y of
-                    OPENPAREN ->
-                      (n + 1, acc ++ [y], [EOF]) -- ++ [y]
+      getRightParentheses xs
+        = let
+            check (n, acc, (y:[]))
+              = case y of
+                  OPENPAREN ->
+                    (n + 1, acc ++ [y], [EOF]) -- ++ [y]
 
-                    CLOSEPAREN ->
-                      if n == 0 then
-                        (0, acc ++ [y], []) -- ++ [y]
+                  CLOSEPAREN ->
+                    if n == 0 then
+                      (0, acc ++ [y], []) -- ++ [y]
+                    else
+                      (n - 1, acc ++ [y], [CLOSEPAREN])
+
+                  othertoken ->
+                    (n, acc ++ [y], [othertoken])
+
+            check (n, acc, (y:ys))
+              = case y of
+                  OPENPAREN ->
+                    check (n + 1, acc ++ [y], ys) -- ++ [y]
+
+                  CLOSEPAREN ->
+                    if n == 0 then
+                      (0, acc ++ [y], ys) -- ++ [y]
                       else
-                        (n - 1, acc ++ [y], [CLOSEPAREN])
+                        check (n - 1, acc ++ [y], ys)
 
-                    othertoken ->
-                      (n, acc ++ [y], [othertoken])
+                  othertoken ->
+                    check (n, acc ++ [y], ys)
 
-              check (n, acc, (y:ys))
-                = case y of
-                    OPENPAREN ->
-                      check (n + 1, acc ++ [y], ys) -- ++ [y]
+            (_, parenCheck, restCheck) = check (0, [], xs)
 
-                    CLOSEPAREN ->
-                      if n == 0 then
-                        (0, acc ++ [y], ys) -- ++ [y]
-                        else
-                          check (n - 1, acc ++ [y], ys)
+          in
+            (parenCheck, restCheck)
+    in
+      let
+        -- get the head of rest of tokens and checks if there's a comma (below)
+        (parsedExpression, restTokens) = parseHighExp paren
+      in
+        case head restTokens of
+          COMMA ->
+            (Tuple (parseSeparators paren), restParen)
 
-                    othertoken ->
-                      check (n, acc ++ [y], ys)
-
-              (_, parenCheck, restCheck) = check (0, [], xs)
+          LISTPATTERNMATCHING ->
+            let
+              factors = parseSeparators paren
+              heads = init factors
+              rtail = last factors
 
             in
-              (parenCheck, restCheck)
-      in
-        let
-          -- get the head of rest of tokens and checks if there's a comma (below)
-          (parsedExpression, restTokens) = parseHighExp paren
-        in
-          case head restTokens of
-            COMMA ->
-              (Tuple (parseSeparators paren), restParen)
+              (ListPM heads rtail, restParen)
 
-            LISTPATTERNMATCHING ->
-              let
-                factors = parseSeparators paren
-                heads = init factors
-                rtail = last factors
-
-              in
-                (ListPM heads rtail, restParen)
-
-            other ->
-              (Parens parsedExpression, restParen)
+          other ->
+            (Parens parsedExpression, restParen)
 
 parseFactors ((OPENBRACKETS):(CLOSEBRACKETS):rest)
-    = (Special NuL, rest)
+  = (Special NuL, rest)
 
 parseFactors ((OPENBRACKETS):rest)
-    = let
-        (bracket, restBracket) = getRightList rest
+  = let
+      (bracket, restBracket) = getRightList rest
 
-        getRightList xs
-          = let
-              check (n, acc, (y:[]))
-                = case y of
-                    OPENBRACKETS ->
-                      (n + 1, acc, [EOF])
+      getRightList xs
+        = let
+            check (n, acc, (y:[]))
+              = case y of
+                  OPENBRACKETS ->
+                    (n + 1, acc, [EOF])
 
-                    CLOSEBRACKETS ->
-                      if n == 0 then
-                        (0, acc ++ [y], [])
+                  CLOSEBRACKETS ->
+                    if n == 0 then
+                      (0, acc ++ [y], [])
+                    else
+                      (n - 1, acc ++ [y], [CLOSEBRACKETS])
+
+                  othertoken ->
+                    (n, acc ++ [y], [othertoken])
+
+            check (n, acc, (y:ys))
+              = case y of
+                  OPENBRACKETS ->
+                    check (n + 1, acc ++ [y], ys) -- ++ [y]
+
+                  CLOSEBRACKETS ->
+                    if n == 0 then
+                      (0, acc ++ [y], ys) -- ++ [y]
                       else
-                        (n - 1, acc ++ [y], [CLOSEBRACKETS])
+                        check (n - 1, acc ++ [y], ys)
 
-                    othertoken ->
-                      (n, acc ++ [y], [othertoken])
+                  othertoken ->
+                    check (n, acc ++ [y], ys)
 
-              check (n, acc, (y:ys))
-                = case y of
-                    OPENBRACKETS ->
-                      check (n + 1, acc ++ [y], ys) -- ++ [y]
+            (_, listCheck, restCheck) = check (0, [], xs)
 
-                    CLOSEBRACKETS ->
-                      if n == 0 then
-                        (0, acc ++ [y], ys) -- ++ [y]
-                        else
-                          check (n - 1, acc ++ [y], ys)
-
-                    othertoken ->
-                      check (n, acc ++ [y], ys)
-
-              (_, listCheck, restCheck) = check (0, [], xs)
-
-            in
-              (listCheck, restCheck)
-      in
-        (ComprehensionList (parseSeparators $ bracket), restBracket)
+          in
+            (listCheck, restCheck)
+    in
+      (ComprehensionList (parseSeparators $ bracket), restBracket)
 
 -- IF Expression
 --
@@ -412,8 +425,8 @@ parseFactors ((IF):rest)
     in
       (Condition stat thenStat elseStat, restElse)
 
--- IF Expression
---
+  -- IF Expression
+  --
 parseFactors ((THEN):rest)
   = let
       (stat, rest2) = parseHighExp rest
@@ -421,8 +434,8 @@ parseFactors ((THEN):rest)
     in
      (Then stat, rest2)
 
--- IF Expression
---
+  -- IF Expression
+  --
 parseFactors ((ELSE):rest)
   = let
       (stat, rest2) = parseHighExp rest
@@ -431,21 +444,21 @@ parseFactors ((ELSE):rest)
       (Else stat, rest2)
 
 parseFactors ((WHEN):rest)
-    = let
-        (stat, rest2) = parseHighExp rest
+  = let
+      (stat, rest2) = parseHighExp rest
 
-      in
-        (When stat, rest2)
+    in
+      (When stat, rest2)
 
 -- Parse end of
 parseFactors ((EOF):rest)
-    = (Eof, rest)
+  = (Eof, rest)
 
 parseFactors (_:rest)
-    = (Special Undefined, rest)
+  = (Special Undefined, rest)
 
 parseFactor token
-    = fst $ parseFactors [token]
+  = fst $ parseFactors [token]
 
 
 -- Parse expressions separated by commas
@@ -501,6 +514,22 @@ parseAllFactorsCommas tokens'
      in
       parsef' ([], tokens')
 
+parseEachFactor tokens'
+  = let
+      parsef' (ast, tokens)
+        = let
+            (nast, rest) = parseFactors tokens
+
+            nextToken = if null rest then VOID else head rest
+          in
+            if (nextToken /= VOID) && not (nextToken `elem` eofers)
+              then
+                parsef' (ast ++ [nast], rest)
+
+              else
+                (ast ++ [nast], rest)
+     in
+      parsef' ([], tokens')
 
 parseHighExp :: [Token] -> (Ast, [Token])
 parseHighExp []
@@ -524,8 +553,8 @@ parseHighExp tokens@( prefixToken : restTokens )
 
       LAMBDA ->
         let
-          arguments = fst . parseAllFactors . takeWhile (/=ARROW) $ restTokens
-          (bodyFunction, rest2) = parseHighExp . tail . dropWhile (/=ARROW) $ restTokens -- Remove Assign from head (tail)
+          arguments = fst . parseAllFactors . takeWhile (/=RARROW) $ restTokens
+          (bodyFunction, rest2) = parseHighExp . tail . dropWhile (/=RARROW) $ restTokens -- Remove Assign from head (tail)
 
         in
           (LambdaDef arguments bodyFunction, rest2)
@@ -691,19 +720,27 @@ parseExp tokens
 
         (ISEITHER : rest2) ->
           let
-            (subexptree, rest3) = parseAllFactors rest2
+            (subexptree, rest3) = parseEachFactor rest2
 
           in
             ( IsEither factortree subexptree, rest3 )
 
         (ISNEITHER : rest2) ->
           let
-            (subexptree, rest3) = parseAllFactors rest2
+            (subexptree, rest3) = parseEachFactor rest2
 
           in
             ( IsNeither factortree subexptree, rest3 )
 
+        (LARROW : rest2) ->
+          let
+            (subexptree, rest3) = parseFactors rest2
+
+          in
+            (Call factortree [Call subexptree []], rest3)
+
         -- Like an 'otherwise'
         othertokens ->   -- TODO
           (factortree, othertokens)
+
 
