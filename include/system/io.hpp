@@ -1,6 +1,8 @@
 #pragma once
 
 #include <iostream>
+#include <cstdio>
+#include <cstring>
 #include <cmath>
 #include <vector>
 #include <string>
@@ -120,12 +122,11 @@ template<class t>
 // Input functions
 //
 
-vector<char> input ()
+String getLine ()
 {
-  string buffer;
-  cin >> buffer;
-
-  vector<char> data(buffer.begin(), buffer.end());
-  
-  return data;
+  char tmp[256];
+  memset( tmp, 0, sizeof(tmp) );
+  cin.get( tmp, sizeof(tmp) );
+  cin.ignore();
+  return mkstr(tmp);
 }
