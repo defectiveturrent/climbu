@@ -12,6 +12,7 @@ data Inst
   = PushVar String
   | PushConst String
   | PushChar Char
+  | PushString String
   | AssignTo Inst Inst
   | Operation String Inst Inst
   | ForList Inst Inst Inst Inst -- Var; Result; Ranges; Condition.
@@ -42,7 +43,7 @@ parseAst (Void) = TNothing
 parseAst (Call (Num a) [(Num b)]) = PushConst $ (show a) ++ "." ++ (show b) ++ "f"
 parseAst (Ident "_") = Ignore
 parseAst (Ident x) = PushVar x
-parseAst (CharString x) = MakeSimpleList $ map PushChar x
+parseAst (CharString x) = CallFunction (PushVar "mkstr") [PushString x]
 parseAst (CharByte x) = PushChar x
 parseAst (Num x) = PushConst (show x)
 parseAst (Assign e1 e2) = AssignTo (parseAst e1) (parseAst e2)
@@ -161,6 +162,9 @@ translate inst
           else
             ['\'', x, '\'']
 
+      PushString x ->
+        "\"" ++ x ++ "\""
+
       ImportInst path ->
         "#include \"include/" ++ path ++ "\""
 
@@ -203,7 +207,7 @@ translate inst
           ListPMInst heads rtail ->
             let
               hInst = translate $ AssignTo (MakeSimpleList heads) i2
-              tInst = translate $ AssignTo rtail ( CallFunction (PushVar "takesince") [i2, PushConst . show . length $ heads] )
+              tInst = translate $ AssignTo rtail ( CallFunction (PushVar "takeSince") [i2, PushConst . show . length $ heads] )
 
             in
               hInst ++ ";\n" ++ tInst
@@ -229,7 +233,7 @@ translate inst
 
       --"if(" ++ (translate statif) ++ "){" ++ (translate statthen) ++ ";}else{" ++ (translate statelse) ++ ";};"
       MakeCondition statif statthen statelse ->
-        (translate statif) ++ "?" ++ (translate statthen) ++ ":" ++ (translate statelse)
+        "((" ++ (translate statif) ++ ")?(" ++ (translate statthen) ++ "):(" ++ (translate statelse) ++ "))"
 
       Function name args body ->
         let
@@ -262,7 +266,7 @@ translate inst
         "conc(" ++ (translate i1)  ++ "," ++ (translate i2) ++ ")"
 
       LetStack expressions ->
-        "[&](){ " ++ (intercalate ";" . map translate . init $ expressions) ++ "; return " ++ (translate $ last expressions) ++ "; }()"
+        "[&](){ " ++ (intercalate ";" . map translate . init $ expressions) ++ ";\nreturn " ++ (translate $ last expressions) ++ ";}()"
 
       TupleInst i ->
         "make_tuple(" ++ (intercalate "," $ map translate i) ++ ")"
@@ -316,11 +320,13 @@ defnConsts
     ]
 
 defnCallFun
-  = [ ("print", IntLabel)
-    , ("println", IntLabel)
+  = [ ("print", SpecialLabel)
+    , ("println", SpecialLabel)
+    , ("mkstr", List CharLabel)
     , ("sum", IntLabel)
     , ("product", IntLabel)
     , ("elem", BoolLabel)
+    , ("getLine", List CharLabel)
     ]
 
 getdefn var db
@@ -337,6 +343,7 @@ data Label
   | CharLabel
   | BoolLabel
   | List Label
+  | SpecialLabel
   | UnknownLabel
   deriving(Eq, Read)
 
@@ -346,7 +353,9 @@ instance Show Label
     show FloatLabel = "float"
     show CharLabel = "char"
     show BoolLabel = "bool"
-    show (List label) = "vector<" ++ show label ++ ">"
+    show (List CharLabel) = "String"
+    show (List label) = "List<" ++ show label ++ ">"
+    show SpecialLabel = "SpecialDate_t"
     show UnknownLabel = "auto"
 
 typeChecker :: Inst -> String
@@ -360,8 +369,13 @@ typeChecker expression
             PushChar _ ->
               CharLabel
 
-            MakeSimpleList (x:_) ->
-              List (getLabel x)
+            MakeSimpleList x ->
+              List $ foldl
+                     (\acc inst
+                        -> case inst of
+                            PushVar _ -> acc
+                            other -> getLabel inst)
+                     UnknownLabel x
 
             MakeCountList _ _ ->
               List IntLabel
