@@ -31,6 +31,7 @@ parseEofs tokens
       else
         error $ "\nWhoops, something wrong here:\n\t" ++ show exprest
 
+tokenise :: String -> Tokens
 tokenise [] = []                    -- (end of input)
 tokenise (' ':rest) = tokenise rest      -- (skip spaces)
 tokenise ('\n':rest) = tokenise rest
@@ -190,7 +191,7 @@ tokenise (ch:rest)
         (ID n):(tokenise rest2)
 
 
-getname :: [Char] -> ([Char], [Char]) -- (name, rest)
+getname :: String -> (String, String) -- (name, rest)
 getname str
   = let
       getname' [] chs = (chs, [])
@@ -203,7 +204,7 @@ getname str
 isName ch
   = isAlpha ch || ch == '_'
 
-convert :: [Char] -> (Int, [Char])
+convert :: String -> (Int, String)
 convert str
   = let
       conv' [] n = (n, [])
@@ -213,7 +214,7 @@ convert str
     in 
       conv' str 0
 
-tokenRevision :: [Token] -> [Token]
+tokenRevision :: Tokens -> Tokens
 tokenRevision [] = []
 tokenRevision (FUNC:rest)
   = let
@@ -269,8 +270,8 @@ parser tokens
       else
         error $ "\nWhoops, something wrong here:\n\t" ++ show rest
 
-parseFactor :: Token -> Ast
-parseFactors :: [Token] -> (Ast, [Token])
+
+parseFactors :: Tokens -> (Ast, Tokens)
 
 -- Parse idents
 parseFactors ((ID x):rest)
@@ -457,11 +458,13 @@ parseFactors ((EOF):rest)
 parseFactors (_:rest)
   = (Special Undefined, rest)
 
+parseFactor :: Token -> Ast
 parseFactor token
   = fst $ parseFactors [token]
 
 
 -- Parse expressions separated by commas
+parseSeparators :: Tokens -> Asts
 parseSeparators [] = []
 parseSeparators pair
   = let
@@ -474,7 +477,7 @@ parseSeparators pair
         else
           content : (parseSeparators $ tail rest)
 
-parseAllFactors :: [Token] -> ([Ast], [Token])
+parseAllFactors :: Tokens -> (Asts, Tokens)
 parseAllFactors tokens'
   = let
       parsef' (ast, tokens)
@@ -492,11 +495,11 @@ parseAllFactors tokens'
      in
       parsef' ([], tokens')
 
-checkComma :: [Token] -> [Token]
+checkComma :: Tokens -> Tokens
 checkComma tokens
   = (if (not $ null tokens) && (head tokens == COMMA) then tail else id) tokens
 
-parseAllFactorsCommas :: [Token] -> ([Ast], [Token])
+parseAllFactorsCommas :: Tokens -> (Asts, Tokens)
 parseAllFactorsCommas tokens'
   = let
       parsef' (ast, tokens)
@@ -514,6 +517,7 @@ parseAllFactorsCommas tokens'
      in
       parsef' ([], tokens')
 
+parseEachFactor :: Tokens -> (Asts, Tokens)
 parseEachFactor tokens'
   = let
       parsef' (ast, tokens)
@@ -531,7 +535,7 @@ parseEachFactor tokens'
      in
       parsef' ([], tokens')
 
-parseHighExp :: [Token] -> (Ast, [Token])
+parseHighExp :: Tokens -> (Ast, Tokens)
 parseHighExp []
   = (Eof, [])
 
