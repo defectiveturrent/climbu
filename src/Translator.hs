@@ -1,3 +1,21 @@
+{-
+    Climbu compiler / interpreter
+    Copyright (C) 2014  Mario Feroldi
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-}
+
 module Translator where
 
 import Data.Char
@@ -13,6 +31,7 @@ data Inst
   | PushConst String
   | PushChar Char
   | PushString String
+  | DeclVar String
   | AssignTo Inst Inst
   | Operation String Inst Inst
   | ForList Inst Inst Inst Inst -- Var; Result; Ranges; Condition.
@@ -40,6 +59,7 @@ replace wt ch list
   = map (\x -> if x == wt then ch else x) list
 
 parseAst (Void) = TNothing
+parseAst (Decl x) = DeclVar x
 parseAst (Call (Num a) [(Num b)]) = PushConst $ (show a) ++ "." ++ (show b) ++ "f"
 parseAst (Ident "_") = Ignore
 parseAst (Ident x) = PushVar x
@@ -149,6 +169,9 @@ genCode stack
 translate :: Inst -> String
 translate inst
   = case inst of
+      DeclVar x ->
+        x
+
       PushVar x ->
         x
 
@@ -212,8 +235,11 @@ translate inst
             in
               hInst ++ ";\n" ++ tInst
 
+          DeclVar var ->
+            (typeChecker i2) ++ " " ++ var ++ " = " ++ (translate i2)
+
           otherinst ->
-            (typeChecker i2) ++ " " ++ (translate i1) ++ " = " ++ (translate i2)
+            translate i1 ++ " = " ++ translate i2
 
       Operation op i1 i2 ->
         (translate i1) ++ op ++ (if op == "/" then "(float)" else []) ++ (translate i2)
