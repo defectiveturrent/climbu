@@ -1,5 +1,19 @@
 {-
+    Climbu compiler / interpreter
+    Copyright (C) 2014  Mario Feroldi
 
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
 module Parser where
@@ -137,22 +151,25 @@ tokenise ('w':'h':'i':'l':'e':x:rest)
   | not $ isName x = WHILE : tokenise (x:rest)
 
 tokenise ('w':'i':'t':'h':x:rest)
-  | not $ isName x =  WITH : tokenise (x:rest)
+  | not $ isName x = WITH : tokenise (x:rest)
 
 tokenise ('i':'f':x:rest)
-  | not $ isName x =  IF : tokenise (x:rest)
+  | not $ isName x = IF : tokenise (x:rest)
 
 tokenise ('t':'h':'e':'n':x:rest)
-  | not $ isName x =  THEN : tokenise (x:rest)
+  | not $ isName x = THEN : tokenise (x:rest)
 
 tokenise ('e':'l':'s':'e':x:rest)
-  | not $ isName x =  ELSE : tokenise (x:rest)
+  | not $ isName x = ELSE : tokenise (x:rest)
 
 tokenise ('l':'e':'t':x:rest)
   | not $ isName x = LET : tokenise (x:rest)
 
 tokenise ('f':'o':'r':x:rest)
-  | not $ isName x =  FOR : tokenise (x:rest)
+  | not $ isName x = FOR : tokenise (x:rest)
+
+tokenise ('v':'a':'r':x:rest)
+  | not $ isName x = VAR : tokenise (x:rest)
 
 tokenise ('i':'s':x:'e':'i':'t':'h':'e':'r':y:rest)
   | not $ isName x
@@ -165,16 +182,16 @@ tokenise ('i':'s':x:'n':'e':'i':'t':'h':'e':'r':y:rest)
     = ISNEITHER : tokenise (y:rest)
 
 tokenise ('i':'n':x:rest)
-  | not $ isName x =  IN : tokenise (x:rest)
+  | not $ isName x = IN : tokenise (x:rest)
 
 tokenise ('w':'h':'e':'n':x:rest)
-  | not $ isName x =  WHEN : tokenise (x:rest)
+  | not $ isName x = WHEN : tokenise (x:rest)
 
 tokenise ('d':'e':'f':x:rest)
-  | not $ isName x =  FUNC : tokenise (x:rest)
+  | not $ isName x = FUNC : tokenise (x:rest)
 
 tokenise ('l':'a':'m':x:rest)
-  | not $ isName x =  LAMBDA : tokenise (x:rest)
+  | not $ isName x = LAMBDA : tokenise (x:rest)
 
 tokenise (ch:rest)
   | isDigit ch
@@ -192,17 +209,22 @@ tokenise (ch:rest)
 
 
 getname :: String -> (String, String) -- (name, rest)
-getname str
-  = let
-      getname' [] chs = (chs, [])
-      getname' (ch : str) chs
-        | isName ch = getname' str (chs++[ch])
-        | otherwise  = (chs, ch : str)
-    in
-      getname' str []
+getname (h:str)
+  | isName h = let
+                 getname' [] chs = (chs, [])
+                 getname' (ch : str) chs
+                   | isDigitName ch = getname' str (chs++[ch])
+                   | otherwise  = (chs, ch : str)
+
+                 (name, rest) = getname' str []
+               in
+                 (h:name, rest)
 
 isName ch
   = isAlpha ch || ch == '_'
+
+isDigitName ch
+  = isName ch || isDigit ch
 
 convert :: String -> (Int, String)
 convert str
@@ -272,6 +294,9 @@ parser tokens
 
 
 parseFactors :: Tokens -> (Ast, Tokens)
+
+parseFactors (VAR:(ID x):rest)
+  = (Decl x, rest)
 
 -- Parse idents
 parseFactors ((ID x):rest)
