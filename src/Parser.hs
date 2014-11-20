@@ -162,7 +162,7 @@ tokenise ('t':'h':'e':'n':x:rest)
 tokenise ('e':'l':'s':'e':x:rest)
   | not $ isName x = ELSE : tokenise (x:rest)
 
-tokenise ('l':'e':'t':x:rest)
+tokenise ('d':'o':x:rest)
   | not $ isName x = LET : tokenise (x:rest)
 
 tokenise ('f':'o':'r':x:rest)
@@ -262,6 +262,9 @@ tokenRevision (ISNEITHER:rest)
     in
       ISNEITHER : body ++ tokenRevision rest2
 
+tokenRevision ((ID x):OPENPAREN:rest)
+  = ID x : CALLARGS : OPENPAREN : tokenRevision rest
+
 tokenRevision ((ID x):rest)
   = let
       (arguments, rest2) = getUntilEofer ([], rest)
@@ -277,7 +280,7 @@ tokenRevision ((ID x):rest)
         then
           (ID x) : tokenRevision rest
         else
-          [ID x] ++ [CALLARGS] ++ arguments ++ tokenRevision rest2
+          [OPENPAREN, ID x, CALLARGS] ++ arguments ++ [CLOSEPAREN] ++ tokenRevision rest2
 
 tokenRevision (x:rest) = x : tokenRevision rest
 
@@ -394,7 +397,7 @@ parseFactors ((OPENPAREN):rest)
               (ListPM heads rtail, restParen)
 
           other ->
-            (Parens parsedExpression, restParen)
+            astRevision (Parens parsedExpression, restParen)
 
 parseFactors ((OPENBRACKETS):(CLOSEBRACKETS):rest)
   = (Special NuL, rest)
@@ -606,7 +609,7 @@ parseExp tokens
       (factortree, rest) = parseFactors tokens
 
     in
-      case rest of
+     astRevision $ case rest of
         (FOR : rest2) ->
           let
             (varin, IN:rest3) = parseFactors rest2
@@ -637,73 +640,73 @@ parseExp tokens
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Add factortree subexptree, rest3 )
+            astRevision ( Add factortree subexptree, rest3 )
 
         (MINUS : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Sub factortree subexptree, rest3 )
+            astRevision ( Sub factortree subexptree, rest3 )
 
         (MUL : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Mul factortree subexptree, rest3 )
+            astRevision ( Mul factortree subexptree, rest3 )
 
         (DIV : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( (case subexptree of
-                Num 0 ->
-                  Special Infinite
+            astRevision ( (case subexptree of
+                            Num 0 ->
+                              Special Infinite
 
-                _ ->
-                  Div factortree subexptree
-            ), checkComma rest3 )
+                            _ ->
+                              Div factortree subexptree
+                        ), checkComma rest3 )
 
         (GREATERTHAN : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Grt factortree subexptree, rest3 )
+            astRevision ( Grt factortree subexptree, rest3 )
 
         (GREATEREQUAL : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Ge factortree subexptree, rest3 )
+            astRevision ( Ge factortree subexptree, rest3 )
 
         (LESSTHAN : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Let factortree subexptree, rest3 )
+            astRevision ( Let factortree subexptree, rest3 )
 
         (LESSEQUAL : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Le factortree subexptree, rest3 )
+            astRevision ( Le factortree subexptree, rest3 )
 
         (EQUAL : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Equ factortree subexptree, rest3 )
+            astRevision( Equ factortree subexptree, rest3 )
         
         (NOT : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Not factortree subexptree, rest3 )
+            astRevision ( Not factortree subexptree, rest3 )
 
         (MOD : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Mod factortree subexptree, rest3 )
+            astRevision ( Mod factortree subexptree, rest3 )
 
         (WITH : rest2) ->
           let
@@ -733,7 +736,7 @@ parseExp tokens
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Expo factortree subexptree, rest3 )
+            astRevision ( Expo factortree subexptree, rest3 )
 
         (CONCATLIST : rest2) ->
           let
@@ -773,3 +776,31 @@ parseExp tokens
           (factortree, othertokens)
 
 
+astRevision (Parens (Parens ast), tokens) = (Parens ast, tokens)
+
+astRevision (Mul ta (Add pa pb), tokens) = (Add (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Sub pa pb), tokens) = (Sub (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Div pa pb), tokens) = (Div (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Grt pa pb), tokens) = (Grt (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Ge  pa pb), tokens) = (Ge  (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Let pa pb), tokens) = (Let (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Le  pa pb), tokens) = (Le  (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Equ pa pb), tokens) = (Equ (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Not pa pb), tokens) = (Not (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Mod pa pb), tokens) = (Mod (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Expo pa pb), tokens) = (Expo (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Concat pa pb), tokens) = (Concat (Mul ta pa) pb, tokens)
+
+astRevision (Div ta (Add pa pb), tokens) = (Add (Div ta pa) pb, tokens)
+astRevision (Div ta (Sub pa pb), tokens) = (Sub (Div ta pa) pb, tokens)
+astRevision (Div ta (Grt pa pb), tokens) = (Grt (Div ta pa) pb, tokens)
+astRevision (Div ta (Ge  pa pb), tokens) = (Ge  (Div ta pa) pb, tokens)
+astRevision (Div ta (Let pa pb), tokens) = (Let (Div ta pa) pb, tokens)
+astRevision (Div ta (Le  pa pb), tokens) = (Le  (Div ta pa) pb, tokens)
+astRevision (Div ta (Equ pa pb), tokens) = (Equ (Div ta pa) pb, tokens)
+astRevision (Div ta (Not pa pb), tokens) = (Not (Div ta pa) pb, tokens)
+astRevision (Div ta (Mod pa pb), tokens) = (Mod (Div ta pa) pb, tokens)
+astRevision (Div ta (Expo pa pb), tokens) = (Expo (Div ta pa) pb, tokens)
+astRevision (Div ta (Concat pa pb), tokens) = (Concat (Div ta pa) pb, tokens)
+
+astRevision pair = pair
