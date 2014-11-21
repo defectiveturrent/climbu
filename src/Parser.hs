@@ -163,7 +163,7 @@ tokenise ('e':'l':'s':'e':x:rest)
   | not $ isName x = ELSE : tokenise (x:rest)
 
 tokenise ('d':'o':x:rest)
-  | not $ isName x = LET : tokenise (x:rest)
+  | not $ isName x = DO : tokenise (x:rest)
 
 tokenise ('f':'o':'r':x:rest)
   | not $ isName x = FOR : tokenise (x:rest)
@@ -591,13 +591,13 @@ parseHighExp tokens@( prefixToken : restTokens )
         in
           (LambdaDef arguments bodyFunction, rest2)
 
-      LET ->
+      DO ->
         let
           (declarations, IN:rest) = parseAllFactors restTokens
           (todo, rest2) = parseHighExp rest
         
         in
-          (LetIn declarations todo, rest2)
+          (DoIn declarations todo, rest2)
 
       othertokens ->
         parseExp tokens
