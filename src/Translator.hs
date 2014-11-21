@@ -45,7 +45,7 @@ data Inst
   | CallFunction Inst [Inst]      -- foo (1, x, "Hey")
   | DoTake Inst Inst              -- list take n
   | ConcatList Inst Inst          -- [1, 2] ++ [3, 4]
-  | LetStack [Inst]               --
+  | DoStack [Inst]               --
   | TupleInst [Inst]              --
   | ListPMInst [Inst] Inst        --
   | ImportInst String             --
@@ -125,7 +125,7 @@ parseAst (Call name args) = CallFunction (parseAst name) (map parseAst args)
 parseAst (Condition stat thenStat elseStat) = Block $ MakeCondition (parseAst stat) (parseAst thenStat) (parseAst elseStat)
 parseAst (IsEither e1 e2) = CallFunction (PushVar "elem") [parseAst e1, MakeSimpleList $ map parseAst e2]
 parseAst (IsNeither e1 e2) = Block $ CallFunction (PushVar "!elem") [parseAst e1, MakeSimpleList $ map parseAst e2]
-parseAst (LetIn e1 e2) = LetStack $ map parseAst (e1 ++ [e2])
+parseAst (DoIn e1 e2) = DoStack $ map parseAst (e1 ++ [e2])
 parseAst (Tuple e) = TupleInst $ map parseAst e
 parseAst (ListPM e1 e2) = ListPMInst (map parseAst e1) (parseAst e2)
 parseAst (Special x) = PushVar $ show x
@@ -291,7 +291,7 @@ translate inst
       ConcatList i1 i2 ->
         "conc(" ++ (translate i1)  ++ "," ++ (translate i2) ++ ")"
 
-      LetStack expressions ->
+      DoStack expressions ->
         "[&](){ " ++ (intercalate ";" . map translate . init $ expressions) ++ ";\nreturn " ++ (translate $ last expressions) ++ ";}()"
 
       TupleInst i ->
@@ -425,7 +425,7 @@ typeChecker expression
             CallFunction (PushVar x) _ ->
               getdefn x defnCallFun
 
-            LetStack x ->
+            DoStack x ->
               getLabel $ last x
 
             Operation operator _ _ ->
