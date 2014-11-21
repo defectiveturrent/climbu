@@ -84,7 +84,7 @@ interpret (lines:_)
 
 version _
   = do
-      putStrLn "Climbu compiler v1.1 - Copyright (C) 2014  Mario Feroldi"
+      putStrLn "Climbu compiler v1.2 - Copyright (C) 2014  Mario Feroldi"
       putStrLn "This program comes with ABSOLUTELY NO WARRANTY."
       putStrLn "This is free software, and you are welcome to redistribute it"
       putStrLn "under GPL v3 license.\n"
