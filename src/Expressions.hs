@@ -72,7 +72,7 @@ data Token
   | ISNEITHER
   | WHILE
   | FOR
-  | LET
+  | DO
   | IN
   | WHEN
   | FUNC
@@ -123,8 +123,8 @@ data Ast
   | IsNeither Ast [Ast]                 -- n in either 1 2 3
   | When Ast                           -- Simple condition
   | In Ast Ast                         -- Simple operator, like each
-  | For Ast Ast Ast                  -- Specific comprehension list
-  | LetIn [Ast] Ast                    -- An expression that allows to make more expressions in a single block
+  | For Ast Ast Ast                    -- Specific comprehension list
+  | DoIn [Ast] Ast                     -- An expression that allows to make more expressions in a single block
   | Import String                      -- To import a library
   | ListPM [Ast] Ast                   -- A list's pattern matching operator (:) ( [Head] Tail )
   | Negate Ast                         --
@@ -147,14 +147,13 @@ data SpecialDate
 eofers
   = [ CLOSEPAREN
     , CLOSEBRACKETS
-    , CLOSEKEYS
     , RARROW
     , LARROW
-    -- , VAR
+    -- , VAR -- I don't know the reason, but it's crashing the let-in expression
     , IF
     , THEN
     , ELSE
-    , LET
+    , DO
     , FOR
     , IN
     , WHEN
