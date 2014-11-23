@@ -132,23 +132,33 @@ parseAst (Special x) = PushVar $ show x
 parseAst _ = TNothing
 
 
--- To translate tokens to instructions, you should do this:
---
---   execute $ tokenise "def foo a = a * 2 and print with foo in 5"
---
-
 execute :: [Token] -> [String]
 execute stack
   = let
       paragraphs :: [Ast]
       paragraphs = parseEofs stack
 
+      declarations :: [(String, Label)]
+      declarations
+        = let
+            search [] = []
+            search ((Def (Ident name) args body) : rest)
+              = (name, searchLabel declarations $ parseAst body) : search rest
+
+            search ((Assign (Decl var) value) : rest)
+              = (var, getLabel $ parseAst value) : search rest
+
+            search (_:rest)
+              = search rest
+          in
+            search paragraphs
+
       outcode = map parseAst paragraphs
 
     in
       map (\x ->
             let
-              string = (translate x)
+              string = (translate declarations x)
             in
               if isPrefixOf "#include" string
                 then
@@ -166,9 +176,34 @@ genCode stack
   ++ "  return _main(), 0;\n"
   ++ "}"
 
-translate :: Inst -> String
-translate inst
-  = case inst of
+searchLabel :: [(String, Label)] -> Inst -> Label
+searchLabel stack (CallFunction (PushVar name) args)
+  = let
+      l = getdefn name stack
+    in
+      case l of
+        UnknownLabel -> getLabel (PushVar name)
+        _ -> l
+
+searchLabel stack (PushVar var)
+  = let
+      l = getdefn var stack
+    in
+      case l of
+        UnknownLabel -> getLabel (PushVar var)
+        _ -> l
+
+searchLabel _ inst
+  = getLabel inst
+
+translate :: [(String, Label)] -> Inst -> String
+translate stack inst
+  = let
+      trans = translate stack
+      getLabelString = show . searchLabel stack
+
+    in
+    case inst of
       DeclVar x ->
         x
 
@@ -192,7 +227,7 @@ translate inst
         "#include \"include/" ++ path ++ "\""
 
       NegateInst x ->
-        "(-" ++ translate x ++ ")"
+        "(-" ++ trans x ++ ")"
 
       AssignTo i1 i2 ->
         case i1 of
@@ -203,7 +238,7 @@ translate inst
                     then
                       []
                     else
-                      "auto " ++ (translate var) ++ " = get<" ++ show n ++ ">(" ++ (translate i2) ++ ")"
+                      "auto " ++ (trans var) ++ " = get<" ++ show n ++ ">(" ++ (trans i2) ++ ")"
 
               vars = [parseTuple n var | n   <- [0..] 
                                        | var <- list
@@ -219,7 +254,7 @@ translate inst
                     then
                       []
                     else
-                      translate $ AssignTo var (DoTake i2 (PushConst . show $ n))
+                      trans $ AssignTo var (DoTake i2 (PushConst . show $ n))
 
               vars = [parseList n var | n   <- [0..] 
                                       | var <- list
@@ -229,73 +264,73 @@ translate inst
 
           ListPMInst heads rtail ->
             let
-              hInst = translate $ AssignTo (MakeSimpleList heads) i2
-              tInst = translate $ AssignTo rtail ( CallFunction (PushVar "takeSince") [i2, PushConst . show . length $ heads] )
+              hInst = trans $ AssignTo (MakeSimpleList heads) i2
+              tInst = trans $ AssignTo rtail ( CallFunction (PushVar "takeSince") [i2, PushConst . show . length $ heads] )
 
             in
               hInst ++ ";\n" ++ tInst
 
           DeclVar var ->
-            (typeChecker i2) ++ " " ++ var ++ " = " ++ (translate i2)
+            (getLabelString i2) ++ " " ++ var ++ " = " ++ (trans i2)
 
           otherinst ->
-            translate i1 ++ " = " ++ translate i2
+            trans i1 ++ " = " ++ trans i2
 
       Operation op i1 i2 ->
-        (translate i1) ++ op ++ (if op == "/" then "(float)" else []) ++ (translate i2)
+        (trans i1) ++ op ++ (if op == "/" then "(float)" else []) ++ (trans i2)
 
       -- TOFIX
       ForList var fresult ranges fcondition ->
-        "eachlist(" ++ (translate fresult) ++ ", " ++ (translate ranges) ++ ", " ++ (translate fcondition) ++ ")"
+        trans $ CallFunction (PushVar "eachlist") [fresult, ranges, fcondition]
 
       MakeCountList min_ max_ ->
-        "countlist(" ++ (translate min_) ++ ", " ++ (translate max_) ++ ")"
+        trans $ CallFunction (PushVar "countlist") [min_, max_]
 
       msl @ (MakeSimpleList content) ->
-        typeChecker msl ++ "({" ++ (intercalate "," $ map translate content) ++ "})"
+        getLabelString msl ++ "({" ++ (intercalate "," $ map trans content) ++ "})"
 
       Block i ->
-        "(" ++ (translate i) ++ ")"
+        "(" ++ (trans i) ++ ")"
 
-      --"if(" ++ (translate statif) ++ "){" ++ (translate statthen) ++ ";}else{" ++ (translate statelse) ++ ";};"
+      --"if(" ++ (trans statif) ++ "){" ++ (trans statthen) ++ ";}else{" ++ (trans statelse) ++ ";};"
       MakeCondition statif statthen statelse ->
-        "((" ++ (translate statif) ++ ")?(" ++ (translate statthen) ++ "):(" ++ (translate statelse) ++ "))"
+        "((" ++ (trans statif) ++ ")?(" ++ (trans statthen) ++ "):(" ++ (trans statelse) ++ "))"
 
       Function name args body ->
         let
-          strname = translate name
+          strname = trans name
           checkName = if strname == "main" then "_main" else strname
 
-          --line = translate $ AssignTo (PushVar checkName) (Lambda args body)
+          --line = trans $ AssignTo (PushVar checkName) (Lambda args body)
           line
             =  genGenericPrefix (if args /= [TNothing] then length args else 0)
-            ++ typeChecker body
+            ++ getLabelString body
             ++ " "
             ++ checkName
-            ++ genGenericArguments args
+            ++ genGenericArguments stack args
             ++ "\n{ return "
-            ++ (translate body)
+            ++ (trans body)
             ++ "; }"
         in
           line
 
       Lambda args body ->
-        "[&](" ++ (intercalate "," $ map (\x -> "auto "++(translate x)) args) ++ "){ return " ++ (translate body) ++ "; }"
+        "[&](" ++ (intercalate "," $ map (\x -> "auto "++(trans x)) args) ++ "){ return " ++ (trans body) ++ "; }"
 
       CallFunction name args ->
-        (translate name) ++ "(" ++ (intercalate "," $ map translate args) ++ ")"
+        (trans name) ++ "(" ++ (intercalate "," $ map trans args) ++ ")"
 
       DoTake i1 i2 ->
-        (translate i1) ++ "[" ++ (translate i2) ++ "]"
+        (trans i1) ++ "[" ++ (trans i2) ++ "]"
 
       ConcatList i1 i2 ->
-        "conc(" ++ (translate i1)  ++ "," ++ (translate i2) ++ ")"
+        trans $ CallFunction (PushVar "conc") [i1, i2]
 
       DoStack expressions ->
-        "[&](){ " ++ (intercalate ";" . map translate . init $ expressions) ++ ";\nreturn " ++ (translate $ last expressions) ++ ";}()"
+        "[&](){ " ++ (intercalate ";" . map trans . init $ expressions) ++ ";\nreturn " ++ (trans $ last expressions) ++ ";}()"
 
       TupleInst i ->
-        "make_tuple(" ++ (intercalate "," $ map translate i) ++ ")"
+        trans $ CallFunction (PushVar "make_tuple") i
 
       Error msg ->
         error msg
@@ -319,7 +354,7 @@ genGenericPrefix n
         else
           " "
 
-genGenericArguments args
+genGenericArguments stack args
   = let
       prefix = "("
       suffix = ")"
@@ -332,7 +367,7 @@ genGenericArguments args
 
       completeArguments
         =  prefix
-        ++ intercalate ", " (map (\(a, b) -> unwords [a, b]) $ zip classes (map translate args))
+        ++ intercalate ", " (map (\(a, b) -> unwords [a, b]) $ zip classes (map (translate stack) args))
         ++ suffix
 
     in
@@ -348,6 +383,8 @@ defnConsts
 defnCallFun
   = [ ("print", SpecialLabel)
     , ("println", SpecialLabel)
+    , ("puts", SpecialLabel)
+    , ("putc", SpecialLabel)
     , ("mkstr", List CharLabel)
     , ("sum", IntLabel)
     , ("product", IntLabel)
@@ -384,73 +421,76 @@ instance Show Label
     show SpecialLabel = "SpecialDate_t"
     show UnknownLabel = "auto"
 
+getLabel :: Inst -> Label
+getLabel expr
+  = case expr of
+      PushConst _ ->
+        IntLabel
+
+      PushChar _ ->
+        CharLabel
+
+      MakeSimpleList x ->
+        List $ foldl
+               (\acc inst
+                  -> case inst of
+                      PushVar _ -> acc
+                      other -> getLabel inst)
+               UnknownLabel x
+
+      MakeCountList _ _ ->
+        List IntLabel
+
+      MakeCondition _ x y ->
+        if getLabel x == UnknownLabel
+          then
+            getLabel y
+          else
+            getLabel x
+
+      ForList _ x _ _ ->
+        getLabel x
+
+      ConcatList x _ ->
+        getLabel x
+
+      PushVar x ->
+        getdefn x defnConsts
+
+      CallFunction (PushVar x) _ ->
+        getdefn x defnCallFun
+
+      Lambda _ body ->
+        getLabel body
+
+      DoStack x ->
+        getLabel $ last x
+
+      Operation operator _ _ ->
+        case operator of
+          ">" ->
+            BoolLabel
+          "<" ->
+            BoolLabel
+          ">=" ->
+            BoolLabel
+          "<=" ->
+            BoolLabel
+          "==" ->
+            BoolLabel
+          "!=" ->
+            BoolLabel
+          "/" ->
+            FloatLabel
+          _ ->
+            IntLabel
+
+      Block x ->
+        getLabel x
+
+      _ ->
+        UnknownLabel
+
 typeChecker :: Inst -> String
 typeChecker expression
-  = let
-      getLabel expr
-        = case expr of
-            PushConst _ ->
-              IntLabel
-
-            PushChar _ ->
-              CharLabel
-
-            MakeSimpleList x ->
-              List $ foldl
-                     (\acc inst
-                        -> case inst of
-                            PushVar _ -> acc
-                            other -> getLabel inst)
-                     UnknownLabel x
-
-            MakeCountList _ _ ->
-              List IntLabel
-
-            MakeCondition _ x y ->
-              if getLabel x == UnknownLabel
-                then
-                  getLabel y
-                else
-                  getLabel x
-
-            ForList _ x _ _ ->
-              getLabel x
-
-            ConcatList x _ ->
-              getLabel x
-
-            PushVar x ->
-              getdefn x defnConsts
-
-            CallFunction (PushVar x) _ ->
-              getdefn x defnCallFun
-
-            DoStack x ->
-              getLabel $ last x
-
-            Operation operator _ _ ->
-              case operator of
-                ">" ->
-                  BoolLabel
-                "<" ->
-                  BoolLabel
-                ">=" ->
-                  BoolLabel
-                "<=" ->
-                  BoolLabel
-                "==" ->
-                  BoolLabel
-                "!=" ->
-                  BoolLabel
-                "/" ->
-                  FloatLabel
-                _ ->
-                  IntLabel
-
-            Block x ->
-              getLabel x
-
-            _ ->
-              UnknownLabel
-    in
-      show $ getLabel expression
+  = show $ getLabel expression
