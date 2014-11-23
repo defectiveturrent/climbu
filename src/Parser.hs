@@ -89,6 +89,7 @@ tokenise ('(':'*':rest)             -- (comments)
       subtokenise rest
 
 tokenise (';':rest)         = EOF : tokenise rest
+tokenise ('.':'.':'.':rest) = YADAYADA : tokenise rest
 tokenise ('<':'-':rest)     = LARROW : tokenise rest
 tokenise ('-':'>':rest)     = RARROW : tokenise rest
 tokenise ('(':rest)         = OPENPAREN : tokenise rest
@@ -134,6 +135,7 @@ tokenise ('n':'u':'l':'l':x:rest)
 
 tokenise ('c':'a':'l':'l':x:rest)
   | not $ isName x
+  , isName $ head rest
   = let
       (n, rest2) = getname rest
 
@@ -269,11 +271,12 @@ tokenRevision ((ID x):rest)
   = let
       (arguments, rest2) = getUntilEofer ([], rest)
 
+      getUntilEofer :: (Tokens, Tokens) -> (Tokens, Tokens)
       getUntilEofer (acc, [])
         = (acc, [])
         
       getUntilEofer (acc, x:xs) | x `elem` eofers = (acc, x:xs)
-                                | otherwise = getUntilEofer (acc ++ [x], xs)
+                                | otherwise       = getUntilEofer (acc ++ [x], xs)
 
     in
       if null arguments
@@ -281,6 +284,9 @@ tokenRevision ((ID x):rest)
           (ID x) : tokenRevision rest
         else
           [OPENPAREN, ID x, CALLARGS] ++ arguments ++ [CLOSEPAREN] ++ tokenRevision rest2
+
+tokenRevision (STRING a : STRING b : rest)
+  = STRING a : CONCATLIST : tokenRevision (STRING b : rest)
 
 tokenRevision (x:rest) = x : tokenRevision rest
 
@@ -314,6 +320,9 @@ parseFactors ((CHAR ch):rest)
 -- Parse numbers
 parseFactors ((CONST x):rest)
   = (Num x, rest)
+
+parseFactors (YADAYADA:rest)
+  = (Call (Ident "alert") [CharString "Not yet implemented"], rest)
 
 parseFactors ((CALLALONE x):rest)
   = (Call (Ident x) [], rest)
@@ -585,7 +594,7 @@ parseHighExp tokens@( prefixToken : restTokens )
 
       LAMBDA ->
         let
-          arguments = fst . parseAllFactors . takeWhile (/=RARROW) $ restTokens
+          arguments = if head restTokens == RARROW then [] else fst . parseAllFactors . takeWhile (/=RARROW) $ restTokens
           (bodyFunction, rest2) = parseHighExp . tail . dropWhile (/=RARROW) $ restTokens -- Remove Assign from head (tail)
 
         in
