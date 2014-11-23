@@ -25,8 +25,15 @@
 #include <cstdint>
 #include <tuple>
 
-using namespace std;
-using namespace placeholders;
+using std::cout;
+using std::cin;
+using std::string;
+using std::vector;
+using std::get;
+using std::pair;
+using std::tuple;
+
+using namespace std::placeholders;
 
 //
 // Structured definition
