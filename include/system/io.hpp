@@ -1,19 +1,19 @@
 /*
-    Climbu compiler / interpreter
-    Copyright (C) 2014  Mario Feroldi
+      Climbu compiler / interpreter
+      Copyright (C) 2014  Mario Feroldi
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+      This program is free software: you can redistribute it and/or modify
+      it under the terms of the GNU General Public License as published by
+      the Free Software Foundation, either version 3 of the License, or
+      (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+      You should have received a copy of the GNU General Public License
+      along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #pragma once
@@ -27,102 +27,110 @@
 #include <cstdint>
 #include <tuple>
 
-using namespace std;
-
-//
-// Structured definition
-//
-
-typedef SpecialDate_t USTDFUNC;
+using std::cout;
+using std::cin;
+using std::string;
+using std::vector;
 
 //
 // Print functions
 //
 
+SpecialDate_t putc ( char charactere );
+SpecialDate_t puts ( const String & line );
+
 SpecialDate_t print ( SpecialDate_t msg )
 {
-  switch( msg )
-  {
-    case Undefined:
-      std::cout << "Undefined";
-      break;
+   switch( msg )
+   {
+      case Undefined:
+         cout << "Undefined";
+         break;
 
-    case NaN:
-      std::cout << "NaN";
-      break;
+      case NaN:
+         cout << "NaN";
+         break;
 
-    case Infinite:
-      std::cout << "Infinite";
-      break;
+      case Infinite:
+         cout << "Infinite";
+         break;
 
-    case NuL:
-      std::cout << "[]";
-      break;
+      case NuL:
+         cout << "[]";
+         break;
 
-    case NuT:
-      std::cout << "()";
-      break;
+      case NuT:
+         cout << "()";
+         break;
 
-    case NuS:
-      std::cout << "\"\"";
-      break;
+      case NuS:
+         cout << "\"\"";
+         break;
 
-    case Null:
-      std::cout << "null";
-      break;
+      case Null:
+         cout << "null";
+         break;
 
-    case Void:
-      break;
+      case Void:
+         break;
 
-    default:
-      return Undefined;
-  };
-  return Void;
+      default:
+         return Undefined;
+   };
+   return Void;
 }
 
-USTDFUNC print ( int msg )
+SpecialDate_t print ( int msg )
 {
-  return cout << msg, Void;
+   return cout << msg, Void;
 }
 
-USTDFUNC print ( char msg )
+SpecialDate_t print ( char msg )
 {
-  return cout << msg, Void;
+   return cout << '\'' << msg << '\'', Void;
 }
 
-USTDFUNC print ( const vector<char>& msg )
+SpecialDate_t print ( const String & msg )
 {
-  for( auto ch: msg )
-    print(ch);
-  return Void;
+   cout << '"';
+   for( auto ch: msg )
+      cout << ch;
+   cout << '"';
+   return Void;
 }
 
-USTDFUNC print ( float msg )
+SpecialDate_t print ( float msg )
 {
-  return cout << msg, Void;
+   return cout << msg, Void;
+}
+
+template<class t> SpecialDate_t print ( const t & what )
+{
+   std::cout << what;
+   return Void;
 }
 
 template<class t>
-  USTDFUNC print ( const vector<t>& list )
+   SpecialDate_t print ( const vector<t>& list )
 {
-  print('[');
-  for ( int i = 0; i < list.size(); ++i )
-  {
-    print(list[i]);
-    if ( (i + 1) != list.size() )
-      print(',');
-  }
-  return print(']');
+   putc('[');
+   for ( int i = 0; i < list.size(); ++i )
+   {
+      print(list[i]);
+      if ( (i + 1) != list.size() )
+         putc(',');
+   }
+   return putc(']');
 }
 
 template<class a, class b>
-  USTDFUNC print ( const tuple<a, b>& pair )
+   SpecialDate_t print ( const tuple<a, b> & pair )
 {
-  print('(');
-  print(get<0>(pair));
-  print(',');
-  print(get<1>(pair));
-  return print(')');
+   putc('(');
+   print(get<0>(pair));
+   putc(',');
+   print(get<1>(pair));
+   return putc(')');
 }
 
 //
@@ -130,10 +138,29 @@ template<class a, class b>
 //
 
 template<class t>
-  USTDFUNC println ( t msg )
+   SpecialDate_t println ( t msg )
 {
-  print(msg);
-  return print('\n');
+   print(msg);
+   return putc('\n');
+}
+
+SpecialDate_t putc ( char charactere )
+{
+   cout << charactere;
+   return Void;
+}
+
+SpecialDate_t puts ( const String & line )
+{
+   for( auto ch: line )
+      cout << ch;
+   cout << std::endl;
+   return Void;
+}
+
+SpecialDate_t alert( const String & msg )
+{
+    return puts(msg);
 }
 
 //
@@ -142,9 +169,38 @@ template<class t>
 
 String getLine ()
 {
-  char tmp[256];
-  memset( tmp, 0, sizeof(tmp) );
-  cin.get( tmp, sizeof(tmp) );
-  cin.ignore();
-  return mkstr(tmp);
+   char tmp[256];
+   cin.ignore();
+   cin.get( tmp, sizeof(tmp) );
+   return mkstr(tmp);
+}
+
+namespace climbu
+{
+   template<class t> t getSomething ()
+   {
+      t var;
+      cin >> var;
+      return var;
+   }
+}
+
+char getChar ()
+{
+   return climbu::getSomething<char>();
+}
+
+String getWord ()
+{
+   return mkstr(climbu::getSomething<string>());
+}
+
+int getInteger ()
+{
+   return climbu::getSomething<int>();
+}
+
+float getReal ()
+{
+   return climbu::getSomething<float>();
 }
