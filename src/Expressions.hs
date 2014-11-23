@@ -80,6 +80,7 @@ data Token
   | LISTPATTERNMATCHING
   | NULLSTRING
   | NULL
+  | YADAYADA
   | VOID
   | EOF  -- End of line
   deriving (Show, Read, Eq)
@@ -124,7 +125,7 @@ data Ast
   | When Ast                           -- Simple condition
   | In Ast Ast                         -- Simple operator, like each
   | For Ast Ast Ast                    -- Specific comprehension list
-  | DoIn [Ast] Ast                     -- An expression that allows to make more expressions in a single block
+  | DoIn [Ast] Ast                     -- An expression that allows to make more expressions on a single block
   | Import String                      -- To import a library
   | ListPM [Ast] Ast                   -- A list's pattern matching operator (:) ( [Head] Tail )
   | Negate Ast                         --
@@ -180,4 +181,5 @@ eofers
     , ISEITHER
     , ISNEITHER
     , CONCATLIST
+    , YADAYADA
     ]
