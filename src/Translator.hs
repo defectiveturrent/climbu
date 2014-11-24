@@ -140,13 +140,13 @@ execute stack
 
       declarations :: [(String, Label)]
       declarations
-        = let
+        = defnConsts ++ let
             search [] = []
             search ((Def (Ident name) args body) : rest)
               = (name, searchLabel declarations $ parseAst body) : search rest
 
             search ((Assign (Decl var) value) : rest)
-              = (var, getLabel $ parseAst value) : search rest
+              = (var, searchLabel declarations $ parseAst value) : search rest
 
             search (_:rest)
               = search rest
@@ -193,6 +193,20 @@ searchLabel stack (PushVar var)
         UnknownLabel -> getLabel (PushVar var)
         _ -> l
 
+searchLabel stack (MakeSimpleList list)
+  = let
+      l = foldl
+          (\acc inst
+             -> case acc of
+                  UnknownLabel -> searchLabel stack inst
+                  _ -> acc)
+          UnknownLabel
+          list
+    in
+      case l of
+        UnknownLabel -> SpecialLabel
+        _ -> List l
+
 searchLabel _ inst
   = getLabel inst
 
@@ -233,32 +247,24 @@ translate stack inst
         case i1 of
           TupleInst list ->
             let
+              parseTuple _ Ignore = []
               parseTuple n var
-                = if var == Ignore
-                    then
-                      []
-                    else
-                      "auto " ++ (trans var) ++ " = get<" ++ show n ++ ">(" ++ (trans i2) ++ ")"
+                = "auto " ++ (trans var) ++ " = get<" ++ show n ++ ">(" ++ (trans i2) ++ ")"
 
               vars = [parseTuple n var | n   <- [0..] 
-                                       | var <- list
-                                       ]
+                                       | var <- list ]
 
             in
               intercalate ";\n" $ filter (not . null) vars
 
           MakeSimpleList list ->
             let
-              parseList n var
-                = if var == Ignore
-                    then
-                      []
-                    else
-                      trans $ AssignTo var (DoTake i2 (PushConst . show $ n))
+              parseList _ Ignore = []
+              parseList n (PushVar var)
+                = trans . AssignTo (DeclVar var) . DoTake i2 . PushConst . show $ n
 
-              vars = [parseList n var | n   <- [0..] 
-                                      | var <- list
-                                      ]
+              vars = [parseList n var | n   <- [0..]
+                                      | var <- list ]
             in
               intercalate ";\n" $ filter (not . null) vars
 
@@ -378,6 +384,14 @@ genGenericArguments stack args
 defnConsts
   = [ ("true", BoolLabel)
     , ("false", BoolLabel)
+    , ("Undefined", SpecialLabel)
+    , ("NaN", SpecialLabel)
+    , ("Infinite", SpecialLabel)
+    , ("NuL", SpecialLabel)
+    , ("NuT", SpecialLabel)
+    , ("NuS", SpecialLabel)
+    , ("Null", SpecialLabel)
+    , ("Void", SpecialLabel)
     ]
 
 defnCallFun
@@ -417,6 +431,7 @@ instance Show Label
     show CharLabel = "char"
     show BoolLabel = "bool"
     show (List CharLabel) = "String"
+    show (List UnknownLabel) = "auto"
     show (List label) = "List<" ++ show label ++ ">"
     show SpecialLabel = "SpecialDate_t"
     show UnknownLabel = "auto"
@@ -433,10 +448,11 @@ getLabel expr
       MakeSimpleList x ->
         List $ foldl
                (\acc inst
-                  -> case inst of
-                      PushVar _ -> acc
-                      other -> getLabel inst)
-               UnknownLabel x
+                  -> case acc of
+                      UnknownLabel -> getLabel inst
+                      _ -> acc)
+               UnknownLabel
+               x
 
       MakeCountList _ _ ->
         List IntLabel

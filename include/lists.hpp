@@ -24,7 +24,10 @@
 #include <string>
 #include <cstdint>
 
-using namespace std;
+using std::cout;
+using std::cin;
+using std::string;
+using std::vector;
 
 //
 // Structured definition

@@ -44,12 +44,12 @@ handler e
     | otherwise = ioError e  
 
 commands :: [String]
-commands = [ "-c"        -- compile
-           , "-x"        -- interpret
-           , "-v"        -- version
-           , "--version"
-           , "-h"        -- help
-           , "--help"
+commands = [ "-c"             -- compile
+           , "-i"             -- interpret
+           , "-v"             -- version
+           , "--version"      -- version
+           , "-h"             -- help
+           , "--help"         -- help
            ]
 
 dispatch :: [ (String, [String] -> IO ()) ]
