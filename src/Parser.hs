@@ -240,6 +240,9 @@ convert str
 
 tokenRevision :: Tokens -> Tokens
 tokenRevision [] = []
+tokenRevision (ID x:OPCALLFUNC n:rest)
+  = ID x : OPCALLFUNC n : tokenRevision rest
+
 tokenRevision (FUNC:rest)
   = let
       (body, rest2) = break (==ASSIGN) rest
@@ -266,6 +269,9 @@ tokenRevision (ISNEITHER:rest)
 
 tokenRevision ((ID x):OPENPAREN:rest)
   = ID x : CALLARGS : OPENPAREN : tokenRevision rest
+
+tokenRevision ((ID x):OPENBRACKETS:rest)
+  = ID x : CALLARGS : OPENBRACKETS : tokenRevision rest
 
 tokenRevision ((ID x):rest)
   = let
@@ -505,14 +511,20 @@ parseSeparators :: Tokens -> Asts
 parseSeparators [] = []
 parseSeparators pair
   = let
-      (content, rest) = parseHighExp pair
+      tuple@(content, tokens) = parseHighExp pair
+
+      checkExpression (content, COUNTLIST:rest)
+        = [CountList content restContent] where restContent = fst $ parseHighExp rest
+
+      checkExpression (content, _:rest)
+        = content : parseSeparators rest
 
     in
-      if null rest
+      if null tokens
         then
           [content]
         else
-          content : (parseSeparators $ tail rest)
+          checkExpression tuple
 
 parseAllFactors :: Tokens -> (Asts, Tokens)
 parseAllFactors tokens'
@@ -576,7 +588,7 @@ parseHighExp :: Tokens -> (Ast, Tokens)
 parseHighExp []
   = (Eof, [])
 
-parseHighExp tokens@( _ : [] )
+parseHighExp tokens@(_:[])
   = parseFactors tokens
 
 parseHighExp tokens@( prefixToken : restTokens )
@@ -723,11 +735,11 @@ parseExp tokens
           in
             ( Call factortree [subexptree], checkComma rest3 )
 
-        (COUNTLIST : rest2) ->
+        {-(COUNTLIST : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( CountList factortree subexptree, rest3)
+            ( CountList factortree subexptree, rest3) -}
 
         (CALLARGS : rest2) ->
           let
@@ -786,6 +798,7 @@ parseExp tokens
 
 
 astRevision (Parens (Parens ast), tokens) = (Parens ast, tokens)
+astRevision (ComprehensionList [CountList pa pb], tokens) = (CountList pa pb, tokens)
 
 astRevision (Mul ta (Add pa pb), tokens) = (Add (Mul ta pa) pb, tokens)
 astRevision (Mul ta (Sub pa pb), tokens) = (Sub (Mul ta pa) pb, tokens)

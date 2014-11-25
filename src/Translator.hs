@@ -106,17 +106,7 @@ parseAst (For e1 e2 e3)
     in
       ForList var' (Lambda [var'] result') range (Lambda [var'] condition')
 
-parseAst (ComprehensionList [CountList e1 e2]) = MakeCountList (parseAst e1) (parseAst e2)
-
--- Countlist error
-parseAst (ComprehensionList ((CountList e1 e2):rest))
-  = Error $
-      "\nHey! Lists cannot has two or more countlists:\n\t["
-      ++ (show $ parseAst e1)
-      ++ ".."
-      ++ (show $ parseAst e2)
-      ++ ", ..]\n"
-
+parseAst (CountList e1 e2) = MakeCountList (parseAst e1) (parseAst e2)
 parseAst (ComprehensionList xs) = MakeSimpleList (map parseAst xs)
 parseAst (Parens e1) = Block (parseAst e1)
 parseAst (Def name args body) = Function (parseAst name) (map parseAst args) (parseAst body)
@@ -439,6 +429,9 @@ instance Show Label
 getLabel :: Inst -> Label
 getLabel expr
   = case expr of
+      Lambda _ _ ->
+        UnknownLabel
+
       PushConst _ ->
         IntLabel
 
@@ -475,9 +468,6 @@ getLabel expr
 
       CallFunction (PushVar x) _ ->
         getdefn x defnCallFun
-
-      Lambda _ body ->
-        getLabel body
 
       DoStack x ->
         getLabel $ last x
