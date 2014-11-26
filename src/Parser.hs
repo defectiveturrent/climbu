@@ -825,4 +825,17 @@ astRevision (Div ta (Mod pa pb), tokens) = (Mod (Div ta pa) pb, tokens)
 astRevision (Div ta (Expo pa pb), tokens) = (Expo (Div ta pa) pb, tokens)
 astRevision (Div ta (Concat pa pb), tokens) = (Concat (Div ta pa) pb, tokens)
 
+astRevision (Expo ta (Add pa pb), tokens) = (Add (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Sub pa pb), tokens) = (Sub (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Mul pa pb), tokens) = (Mul (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Div pa pb), tokens) = (Div (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Grt pa pb), tokens) = (Grt (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Ge  pa pb), tokens) = (Ge  (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Let pa pb), tokens) = (Let (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Le  pa pb), tokens) = (Le  (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Equ pa pb), tokens) = (Equ (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Not pa pb), tokens) = (Not (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Mod pa pb), tokens) = (Mod (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Concat pa pb), tokens) = (Concat (Expo ta pa) pb, tokens)
+
 astRevision pair = pair
