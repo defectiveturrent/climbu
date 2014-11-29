@@ -105,8 +105,8 @@ version _
 help _
   = do
       putStrLn "Usage: climbu [option] file...\n"
-      putStrLn "  -c <bin name> <file>    Compiles a Climbu code"
-      putStrLn "  -x <line>                      Interprets a Climbu code"
+      putStrLn "  -c <bin name> <file>           Compiles a Climbu code"
+      putStrLn "  -i <line>                      Interprets a Climbu code"
       putStrLn "  {-v --version}                 Show version"
       putStrLn "  {-h --help}                    Show help"
       putStrLn []
