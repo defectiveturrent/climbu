@@ -33,7 +33,7 @@ It's coming yet. Not finished.
 Climbu has named versions (since v1.3) where the first named version is "I'm a zygote". This is just for fun.
 
 ### You need to read this
-Well, at first, climbu wore the GNU/g++ compiler. Now he uses the clang compiler. Why? I think clang is better for this, and I like clang. So, for run climbu, you need to install clang in your computer. I know that clang is cross-platform, so it's good! You can install it in your linux or windows (I don't know about MacOS). Anyway, you can find clang here: http://clang.llvm.org .
+Well, at first, climbu wore the GNU/g++ compiler. Now it uses the clang compiler. Why? I think clang is better for this, and I like clang. So, for run climbu, you need to install clang in your computer. I know that clang is cross-platform, so it's good! You can install it in your linux or windows (I don't know about MacOS). Anyway, you can find clang here: http://clang.llvm.org .
 
 ## The license
 This project is lincensed under GPLv3, so you are free to do everything (or almost everything) with my language.
