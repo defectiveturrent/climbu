@@ -147,7 +147,7 @@ data SpecialDate
 
 eofers
   = [ CLOSEPAREN
-    -- , CLOSEBRACKETS
+    , CLOSEBRACKETS
     , RARROW
     , LARROW
     -- , VAR -- I don't know the reason, but it's crashing the let-in expression
@@ -162,7 +162,7 @@ eofers
     , COMMA
     , COMMENT
     , LISTPATTERNMATCHING
-    -- , COUNTLIST
+    , COUNTLIST
     , EOF
     , PLUS
     , MINUS

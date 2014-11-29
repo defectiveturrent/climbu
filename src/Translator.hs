@@ -34,18 +34,18 @@ data Inst
   | DeclVar String
   | AssignTo Inst Inst
   | Operation String Inst Inst
-  | ForList Inst Inst Inst Inst -- Var; Result; Ranges; Condition.
+  | ForList Inst Inst Inst        -- Result; Ranges; Condition.
   | Range Inst Inst               -- x in list
   | MakeCountList Inst Inst
   | MakeSimpleList [Inst]
   | Block Inst
-  | MakeCondition Inst Inst Inst
+  | MakeCondition Inst Inst Inst  -- Cond Then Else
   | Function Inst [Inst] Inst     -- auto foo = [](auto a, auto b){ return a + b; }
   | Lambda [Inst] Inst            -- [](auto a, auto b){ }
   | CallFunction Inst [Inst]      -- foo (1, x, "Hey")
   | DoTake Inst Inst              -- list take n
   | ConcatList Inst Inst          -- [1, 2] ++ [3, 4]
-  | DoStack [Inst]               --
+  | DoStack [Inst]                --
   | TupleInst [Inst]              --
   | ListPMInst [Inst] Inst        --
   | ImportInst String             --
@@ -87,24 +87,19 @@ parseAst (Ge  e1 e2) = Operation ">=" (parseAst e1) (parseAst e2)
 parseAst (Le  e1 e2) = Operation "<=" (parseAst e1) (parseAst e2)
 
 parseAst (In e1 e2) = Range (parseAst e1) (parseAst e2)
-
-parseAst (For e1 e2 e3)
+parseAst (For e1 e2 (When e3))
   = let
-      (When condition) = e3
-
       ranges = parseAst e2
-      range = (\(Range _ l) -> l) ranges
-      var' = (\(Range x _) -> x) ranges
-      result' = parseAst e1
-      condition' = case condition of
-                    Void ->
-                      PushConst "true"
 
-                    other ->
-                      parseAst condition
+      var' = (\(Range x _) -> x) ranges
+      range' = (\(Range _ l) -> l) ranges
+      result' = parseAst e1
+      condition' = case e3 of
+                    Void -> PushConst "true"
+                    _ -> parseAst e3
 
     in
-      ForList var' (Lambda [var'] result') range (Lambda [var'] condition')
+      ForList (Lambda [var'] result') range' (Lambda [var'] condition')
 
 parseAst (CountList e1 e2) = MakeCountList (parseAst e1) (parseAst e2)
 parseAst (ComprehensionList xs) = MakeSimpleList (map parseAst xs)
@@ -122,10 +117,10 @@ parseAst (Special x) = PushVar $ show x
 parseAst _ = TNothing
 
 
-execute :: [Token] -> [String]
+execute :: [Token] -> Either String [String]
 execute stack
   = let
-      paragraphs :: [Ast]
+      paragraphs :: Either String Asts
       paragraphs = parseEofs stack
 
       declarations :: [(String, Label)]
@@ -141,32 +136,68 @@ execute stack
             search (_:rest)
               = search rest
           in
-            search paragraphs
+            case paragraphs of
+              Right p
+                -> search p
+              Left msg
+                -> []
 
-      outcode = map parseAst paragraphs
+      outcode
+        = case paragraphs of
+            Right p
+              -> Right $ map parseAst p
+            Left msg
+              -> Left msg
 
     in
-      map (\x ->
-            let
-              string = (translate declarations x)
-            in
-              if isPrefixOf "#include" string
-                then
-                  string
-                else
-                  string ++ ";") outcode
+      case outcode of
+        Right oc
+          -> Right $ map (\x ->
+                        let
+                          string = (translate declarations x)
+                        in
+                          if isPrefixOf "#include" string
+                            then
+                              string
+                            else
+                              string ++ ";") oc
 
-genCode :: String -> String
+        Left msg
+          -> Left msg
+
+genCode :: String -> Either String String
 genCode stack
-  = "#include \"include/prelude.hpp\"\n"
-  ++ (intercalate "\n" . execute . tokenRevision . tokenise $ stack)
-  ++ "\n\n"
-  ++ "int main( int countArgs, char** args )\n"
-  ++ "{\n"
-  ++ "  return _main(), 0;\n"
-  ++ "}"
+  = case (execute $ parseTokens stack) of
+      Right clines
+        -> Right $ "#include \"include/prelude.hpp\"\n"
+                    ++ intercalate "\n" clines
+                    ++ "\n\n"
+                    ++ "int main( int countArgs, char** args )\n"
+                    ++ "{\n"
+                    ++ "  return _main(), 0;\n"
+                    ++ "}"
+
+      Left msg
+        -> Left msg
+
+fromEither (Right x) = x
+fromEither (Left x) = x
 
 searchLabel :: [(String, Label)] -> Inst -> Label
+searchLabel stack (CallFunction (PushVar "countlist") [a, b])
+  = let
+      l = foldl
+          (\acc inst
+             -> case acc of
+                  UnknownLabel -> searchLabel stack inst
+                  _ -> acc)
+          UnknownLabel
+          [a, b]
+    in
+      case l of
+        UnknownLabel -> SpecialLabel
+        _ -> List l
+
 searchLabel stack (CallFunction (PushVar name) args)
   = let
       l = getdefn name stack
@@ -237,26 +268,19 @@ translate stack inst
         case i1 of
           TupleInst list ->
             let
-              parseTuple _ Ignore = []
-              parseTuple n var
-                = "auto " ++ (trans var) ++ " = get<" ++ show n ++ ">(" ++ (trans i2) ++ ")"
-
-              vars = [parseTuple n var | n   <- [0..] 
-                                       | var <- list ]
+              parseTuple (_, Ignore) = []
+              parseTuple (n, var) = "auto " ++ (trans var) ++ " = get<" ++ show n ++ ">(" ++ (trans i2) ++ ")"
 
             in
-              intercalate ";\n" $ filter (not . null) vars
+              intercalate ";\n" . filter (not . null) . map parseTuple . zip [0..] $ list
 
           MakeSimpleList list ->
             let
-              parseList _ Ignore = []
-              parseList n (PushVar var)
-                = trans . AssignTo (DeclVar var) . DoTake i2 . PushConst . show $ n
+              parseList (_, Ignore) = []
+              parseList (n, PushVar var) = trans . AssignTo (DeclVar var) . DoTake i2 . PushConst . show $ n
 
-              vars = [parseList n var | n   <- [0..]
-                                      | var <- list ]
             in
-              intercalate ";\n" $ filter (not . null) vars
+              intercalate ";\n" . filter (not . null) . map parseList . zip [0..] $ list
 
           ListPMInst heads rtail ->
             let
@@ -276,11 +300,11 @@ translate stack inst
         (trans i1) ++ op ++ (if op == "/" then "(float)" else []) ++ (trans i2)
 
       -- TOFIX
-      ForList var fresult ranges fcondition ->
-        trans $ CallFunction (PushVar "eachlist") [fresult, ranges, fcondition]
+      ForList fresult range fcondition ->
+        trans $ CallFunction (PushVar "eachlist") [fresult, range, fcondition]
 
-      MakeCountList min_ max_ ->
-        trans $ CallFunction (PushVar "countlist") [min_, max_]
+      MakeCountList a b ->
+        trans $ CallFunction (PushVar "countlist") [a, b]
 
       msl @ (MakeSimpleList content) ->
         getLabelString msl ++ "({" ++ (intercalate "," $ map trans content) ++ "})"
@@ -304,7 +328,7 @@ translate stack inst
             ++ " "
             ++ checkName
             ++ genGenericArguments stack args
-            ++ "\n{ return "
+            ++ "{ return "
             ++ (trans body)
             ++ "; }"
         in
@@ -369,8 +393,6 @@ genGenericArguments stack args
     in
       completeArguments
 
-
-
 defnConsts
   = [ ("true", BoolLabel)
     , ("false", BoolLabel)
@@ -394,6 +416,11 @@ defnCallFun
     , ("product", IntLabel)
     , ("elem", BoolLabel)
     , ("getLine", List CharLabel)
+    , ("Char", CharLabel)
+    , ("Int", IntLabel)
+    , ("Float", FloatLabel)
+    , ("Double", DoubleLabel)
+    , ("Bool", BoolLabel)
     ]
 
 getdefn var db
@@ -407,6 +434,7 @@ getdefn var db
 data Label
   = IntLabel
   | FloatLabel
+  | DoubleLabel
   | CharLabel
   | BoolLabel
   | List Label
@@ -418,6 +446,7 @@ instance Show Label
   where
     show IntLabel = "int"
     show FloatLabel = "float"
+    show DoubleLabel = "double"
     show CharLabel = "char"
     show BoolLabel = "bool"
     show (List CharLabel) = "String"
@@ -447,8 +476,23 @@ getLabel expr
                UnknownLabel
                x
 
-      MakeCountList _ _ ->
-        List IntLabel
+      MakeCountList a b ->
+        List $ foldl
+               (\acc inst
+                  -> case acc of
+                      UnknownLabel -> getLabel inst
+                      _ -> acc)
+               UnknownLabel
+               [a, b]
+
+      CallFunction (PushVar "countlist") args ->
+        List $ foldl
+               (\acc inst
+                  -> case acc of
+                      UnknownLabel -> getLabel inst
+                      _ -> acc)
+               UnknownLabel
+               args
 
       MakeCondition _ x y ->
         if getLabel x == UnknownLabel
@@ -457,7 +501,7 @@ getLabel expr
           else
             getLabel x
 
-      ForList _ x _ _ ->
+      ForList x _ _ ->
         getLabel x
 
       ConcatList x _ ->

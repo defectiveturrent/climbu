@@ -27,7 +27,8 @@ import Data.Maybe
 import Data.List
 import Expressions
 import Parser
-import Translator
+import qualified Translator as Cpp
+-- import qualified Lua
 
 main = toTry `catch` handler
 
@@ -64,27 +65,39 @@ dispatch = zip commands [ compile
 compile (executable:pathsource:_)
   = do
       stringsource <- readFile pathsource
-      generatedCode <- return $ genCode stringsource
-      filebyteName <- return $ executable ++ ".cpp"
-      writeFile filebyteName generatedCode
-      system $ "g++ -std=c++14 -o" ++ executable ++ " " ++ filebyteName
+      generatedCode <- return $ Cpp.genCode stringsource
+      case generatedCode of
+        Right clines ->
+          do
+            filebyteName <- return $ executable ++ ".cpp"
+            writeFile filebyteName clines
+            system $ "g++ -std=c++14 -o" ++ executable ++ " " ++ filebyteName
+            return ()
+
+        Left msg ->
+          putStrLn msg
       return ()
 
 interpret (lines:_)
   = let
-      generatedCode = genCode $ "def main = println . " ++ lines
+      generatedCode = Cpp.genCode $ "def main = println . " ++ lines
 
     in do
-        writeFile ".Climbu.cpp" generatedCode
-        system "g++ -std=c++14 -o.Climbu .Climbu.cpp"
-        system "./.Climbu"
-        system "rm -rf .Climbu"
-        system "rm -rf .Climbu.cpp"
+        case generatedCode of
+          Right clines ->
+            do
+              writeFile ".cpp_temp_cl.cpp" clines
+              system "clang++ -std=c++14 -Wc++11-extensions .cpp_temp_cl.cpp -o .tmpcl"
+              system "./.tmpcl"
+              return ()
+
+          Left msg ->
+            putStrLn msg
         return ()
 
 version _
   = do
-      putStrLn "Climbu compiler v1.2 - Copyright (C) 2014  Mario Feroldi"
+      putStrLn "Climbu compiler v1.3 - Copyright (C) 2014  Mario Feroldi"
       putStrLn "This program comes with ABSOLUTELY NO WARRANTY."
       putStrLn "This is free software, and you are welcome to redistribute it"
       putStrLn "under GPL v3 license.\n"

@@ -17,6 +17,7 @@
 */
 
 #pragma once
+
 #include <iostream>
 #include <functional>
 #include <cmath>
@@ -50,6 +51,12 @@ enum SpecialDate_t
   Null,      // Null for all
   Void       // Void space
 };
+
+typedef char Char;
+typedef int Int;
+typedef float Float;
+typedef double Double;
+typedef bool Bool;
 
 #include "lists.hpp"
 #include "system/io.hpp"

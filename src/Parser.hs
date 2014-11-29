@@ -24,27 +24,6 @@ import Data.Maybe
 import Data.String.Utils
 import Expressions
 
-parseTokens :: String -> Tokens
-parseTokens
-  = tokenRevision . tokenise
-
-parseEofs :: Tokens -> Asts
-parseEofs [] = []
-parseEofs tokens
-  = let
-      (pretokens, rest) = break (==EOF) tokens
-      (exptree, exprest) = parseHighExp pretokens
-
-    in
-      if null exprest then
-        if null rest then
-          exptree : []
-        else
-          exptree : (parseEofs $ tail rest)
-
-      else
-        error $ "\nWhoops, something wrong here:\n\t" ++ show exprest
-
 tokenise :: String -> Tokens
 tokenise [] = []                    -- (end of input)
 tokenise (' ':rest) = tokenise rest      -- (skip spaces)
@@ -296,20 +275,36 @@ tokenRevision (STRING a : STRING b : rest)
 
 tokenRevision (x:rest) = x : tokenRevision rest
 
+parseTokens :: String -> Tokens
+parseTokens
+  = tokenRevision . tokenise
 
-parser :: [Token] -> Ast
-parser tokens
+parseEofs :: Tokens -> Either String Asts
+parseEofs [] = Right []
+parseEofs tokens
   = let
-      (tree, rest) = parseHighExp tokens -- (Ast, [Token])
+      (pretokens, rest) = break (==EOF) tokens
+      (exptree, exprest) = parseHighExp pretokens
+
     in
-      if null rest then
-        tree
+      if null exprest
+        then
+          if null rest
+            then
+              Right [exptree]
+            else
+              case (parseEofs (tail rest)) of
+                Right x
+                  -> Right (exptree : x)
+                
+                Left msg
+                  -> Left msg
+
       else
-        error $ "\nWhoops, something wrong here:\n\t" ++ show rest
+        Left $ "Something got wrong: " ++ show exprest
 
 
 parseFactors :: Tokens -> (Ast, Tokens)
-
 parseFactors (VAR:(ID x):rest)
   = (Decl x, rest)
 
@@ -456,7 +451,7 @@ parseFactors ((OPENBRACKETS):rest)
           in
             (listCheck, restCheck)
     in
-      (ComprehensionList (parseSeparators $ bracket), restBracket)
+      astRevision (ComprehensionList (parseSeparators $ bracket), restBracket)
 
 -- IF Expression
 --
@@ -509,18 +504,21 @@ parseFactor token
 -- Parse expressions separated by commas
 parseSeparators :: Tokens -> Asts
 parseSeparators [] = []
-parseSeparators pair
+parseSeparators t
   = let
-      tuple@(content, tokens) = parseHighExp pair
+      tuple@(content, tokens) = parseHighExp t
 
       checkExpression (content, COUNTLIST:rest)
-        = [CountList content restContent] where restContent = fst $ parseHighExp rest
+        = [CountList content (fst $ parseHighExp rest)]
 
-      checkExpression (content, _:rest)
+      checkExpression (content, COMMA:rest)
         = content : parseSeparators rest
 
+      checkExpression (content, [])
+        = [content]
+
     in
-      if null tokens
+      if null (checkComma tokens)
         then
           [content]
         else
