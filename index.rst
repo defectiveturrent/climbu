@@ -91,13 +91,14 @@ Ok, I think that's enough.
 
 And here is a complete table of climbu operators:
 
-=============  =============
-  Operators     Description
--------------  -------------
-  +              Add
-  -              Subtraction
-  *              Times
-  /              Divide
-  ^              Exponential
-  %              Module
-=============  =============
+=============  =================
+  Operators       Description
+-------------  -----------------
+=============  =================
+    **'+'**             Add
+    **'-'**             Subtraction
+    **'*'**             Times
+    **'/'**              Divide
+    **'^'**              Exponential
+    **'%'**              Module
+=============  =================
