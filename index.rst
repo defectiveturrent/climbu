@@ -5,15 +5,15 @@ Introduction
 So, what is Climbu? You can say: "Oh, it might be just another programming language, baah, nothing important." But I say to you: "No!! Okay, it's just another programming language, but it's different." How can it be different from others languages? The Climbu is different because it is not compiled or interpreted, it's Converted.
 
 What? Converted? Be more specific!
-+
+++++++++++++++++++++++++++++++++++
 Yeah, it's converted. The Climbu code, when passing by compiler, is converted to an C++ code, and finally compiled. And, again, you say: "Oh, C++? This language is so powerful..." I did think the same.
 
 Why are you making this language?
-+
++++++++++++++++++++++++++++++++++
 I like to teach a lot of nice guys around. But it's complex for him, because it I'm making this language, just for teaching easy (And for when I be tired to program in C++ (serious)).
 
 Okay, let's see it
-+
+++++++++++++++++++
 - It's high-level
   + Yeah, so easy to program, so natural to read, so beautiful.
 
@@ -30,14 +30,14 @@ Okay, let's see it
   + Well, the functions' body are simple, not much complex, the language is not for large codes or whatever you think, it's to make good algorithms in the simple and better way.
 
 The versions
-+
+++++++++++++
 Climbu has named versions (since v1.3) where the first named version is "I'm a zygote". This is just for fun.
 
 You need to read this
-+
++++++++++++++++++++++
 Well, at first, climbu wore the GNU/g++ compiler. Now it uses the clang compiler. Why? I think clang is better for this, and I like clang. So, to run climbu, you need to install clang in your computer. I know that clang is cross-platform, so it's good! You can install it in your linux or windows (I don't know about MacOS). Anyway, you can find clang here: http://clang.llvm.org .
 
 The license
-+
++++++++++++
 This project is lincensed under GPLv3, so you are free to do everything (or almost everything) with my language.
 
