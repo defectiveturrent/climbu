@@ -97,7 +97,7 @@ interpret (lines:_)
 
 version _
   = do
-      putStrLn "Climbu compiler v1.3 - Copyright (C) 2014  Mario Feroldi"
+      putStrLn "Climbu compiler v1.4 (Is this real world?) - Copyright (C) 2014  Mario Feroldi"
       putStrLn "This program comes with ABSOLUTELY NO WARRANTY."
       putStrLn "This is free software, and you are welcome to redistribute it"
       putStrLn "under GPL v3 license.\n"
@@ -106,7 +106,7 @@ help _
   = do
       putStrLn "Usage: climbu [option] file...\n"
       putStrLn "  -c <bin name> <file>           Compiles a Climbu code"
-      putStrLn "  -i <line>                      Interprets a Climbu code"
+      putStrLn "  -i <line>                      Interprets a line"
       putStrLn "  {-v --version}                 Show version"
       putStrLn "  {-h --help}                    Show help"
       putStrLn []

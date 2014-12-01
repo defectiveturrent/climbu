@@ -246,11 +246,41 @@ tokenRevision (ISNEITHER:rest)
     in
       ISNEITHER : body ++ tokenRevision rest2
 
-tokenRevision ((ID x):OPENPAREN:rest)
-  = ID x : CALLARGS : OPENPAREN : tokenRevision rest
+tokenRevision (CLOSEPAREN:ID x:rest)
+  = CLOSEPAREN : MUL : ID x : tokenRevision rest
 
-tokenRevision ((ID x):OPENBRACKETS:rest)
+tokenRevision (CLOSEPAREN:CONST x:rest)
+  = CLOSEPAREN : MUL : CONST x : tokenRevision rest
+
+tokenRevision (CONST x:OPENPAREN:rest)
+  = CONST x : MUL : OPENPAREN : tokenRevision rest
+
+tokenRevision (CONST x:ID y:rest)
+  = CONST x : MUL : ID y : tokenRevision rest
+
+--tokenRevision ((ID x):OPENPAREN:rest)
+--  = ID x : CALLARGS : OPENPAREN : tokenRevision rest
+
+tokenRevision (ID x:OPENBRACKETS:rest)
   = ID x : CALLARGS : OPENBRACKETS : tokenRevision rest
+
+tokenRevision (ID x:OPENPAREN:rest)
+  = formuled
+  where
+    isThereSomethingWrong
+      = foldr
+        (\x acc -> case x of
+             ID _ -> acc
+             _ -> True )
+        False
+
+    formuled = if isThereSomethingWrong args
+                then
+                  ID x : CALLARGS : OPENPAREN : tokenRevision rest
+                else
+                  tokenRevision (FUNC : ID x : (args ++ as))
+
+    (args, CLOSEPAREN:as) = break (==CLOSEPAREN) rest
 
 tokenRevision ((ID x):rest)
   = let
@@ -808,7 +838,6 @@ astRevision (Mul ta (Le  pa pb), tokens) = (Le  (Mul ta pa) pb, tokens)
 astRevision (Mul ta (Equ pa pb), tokens) = (Equ (Mul ta pa) pb, tokens)
 astRevision (Mul ta (Not pa pb), tokens) = (Not (Mul ta pa) pb, tokens)
 astRevision (Mul ta (Mod pa pb), tokens) = (Mod (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Expo pa pb), tokens) = (Expo (Mul ta pa) pb, tokens)
 astRevision (Mul ta (Concat pa pb), tokens) = (Concat (Mul ta pa) pb, tokens)
 
 astRevision (Div ta (Add pa pb), tokens) = (Add (Div ta pa) pb, tokens)

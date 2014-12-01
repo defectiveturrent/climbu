@@ -150,7 +150,7 @@ eofers
     , CLOSEBRACKETS
     , RARROW
     , LARROW
-    -- , VAR -- I don't know the reason, but it's crashing the let-in expression
+    -- , VAR -- I don't know the reason, but it's crashing the do-in expression
     , IF
     , THEN
     , ELSE
