@@ -75,16 +75,16 @@ Arithmetic operators
 ++++++++++++++++++++
 Climbu, like other languages, has arithmetic operators. Not only arithmetic operators, but also mathematic expressions. First, what about to take a look at the operators? ::
 
-   climbu> 4 + 2
+   >>> 4 + 2
    6
 
-   climbu> 7 - 8
+   >>> 7 - 8
    -1
 
-   climbu> 1 / 0
+   >>> 1 / 0
    Infinite
 
-   climbu> 4 * 2 ^ 2
+   >>> 4 * 2 ^ 2
    16
 
 Ok, I think that's enough.
