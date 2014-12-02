@@ -1,9 +1,3 @@
-.. toctree::
-   :maxdepth: 2
-
-   index
-   other page
-
 Climbu
 ******
 Introduction

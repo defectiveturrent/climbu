@@ -45,16 +45,3 @@ Climbu, like other languages, has arithmetic operators. Not only arithmetic oper
    16
 
 Ok, I think that's enough.
-
-And here is a complete table of climbu operators: ::
-
-=============  =================
-  Operators       Description
--------------  -----------------
-    +             Add
-    -             Subtraction
-    *             Times
-    /             Divide
-    ^             Exponential
-    %             Module
-=============  =================
