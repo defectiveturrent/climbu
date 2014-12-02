@@ -49,15 +49,15 @@ The Climbu's code is pre-compiled to an C++ code and finally compiles it to a bi
 
 How to use
 ++++++++++
-To use the Climbu compilder is easy, just type on a terminal the following command:
+To use the Climbu compilder is easy, just type on a terminal the following command: ::
 
    climbu -c bin file.cl
 
-And to interpret a line, just type:
+And to interpret a line, just type: ::
 
    climbu -i "code goes here"
 
-You may also type the help:
+You may also type the help: ::
 
    climbu --help
 
@@ -73,18 +73,18 @@ So, can we start? Okay!
 
 Arithmetic operators
 ++++++++++++++++++++
-Climbu, like other languages, has arithmetic operators. Not only arithmetic operators, but also mathematic expressions. First, what about to take a look at the operators?
+Climbu, like other languages, has arithmetic operators. Not only arithmetic operators, but also mathematic expressions. First, what about to take a look at the operators? ::
 
-   >>> 4 + 2
+   climbu> 4 + 2
    6
 
-   >>> 7 - 8
+   climbu> 7 - 8
    -1
 
-   >>> 1 / 0
+   climbu> 1 / 0
    Infinite
 
-   >>> 4 * 2 ^ 2
+   climbu> 4 * 2 ^ 2
    16
 
 Ok, I think that's enough.
@@ -94,10 +94,9 @@ And here is a complete table of climbu operators:
 =============  =================
   Operators       Description
 -------------  -----------------
-=============  =================
     **+**             Add
     **-**             Subtraction
-    *****             Times
+    ** **             Times
     **/**              Divide
     **^**              Exponential
     **%**              Module
