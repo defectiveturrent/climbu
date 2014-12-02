@@ -1,3 +1,6 @@
+Climbu Documentation
+====================
+
 .. toctree::
    :maxdepth: 2
 
