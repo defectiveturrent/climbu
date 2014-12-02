@@ -95,10 +95,10 @@ And here is a complete table of climbu operators:
   Operators       Description
 -------------  -----------------
 =============  =================
-    **'+'**             Add
-    **'-'**             Subtraction
-    **'*'**             Times
-    **'/'**              Divide
-    **'^'**              Exponential
-    **'%'**              Module
+    **+**             Add
+    **-**             Subtraction
+    *****             Times
+    **/**              Divide
+    **^**              Exponential
+    **%**              Module
 =============  =================
