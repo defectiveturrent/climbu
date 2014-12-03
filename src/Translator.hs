@@ -22,100 +22,15 @@ import Data.Char
 import Data.List
 import Data.Maybe
 import Expressions
+import Token
+import Ast
+import Inst
 import Parser
 
--- Instructions
---
-data Inst
-  = PushVar String
-  | PushConst String
-  | PushChar Char
-  | PushString String
-  | DeclVar String
-  | AssignTo Inst Inst
-  | Operation String Inst Inst
-  | ForList Inst Inst Inst        -- Result; Ranges; Condition.
-  | Range Inst Inst               -- x in list
-  | MakeCountList Inst Inst
-  | MakeSimpleList [Inst]
-  | Block Inst
-  | MakeCondition Inst Inst Inst  -- Cond Then Else
-  | Function Inst [Inst] Inst     -- auto foo = [](auto a, auto b){ return a + b; }
-  | Lambda [Inst] Inst            -- [](auto a, auto b){ }
-  | CallFunction Inst [Inst]      -- foo (1, x, "Hey")
-  | DoTake Inst Inst              -- list take n
-  | ConcatList Inst Inst          -- [1, 2] ++ [3, 4]
-  | DoStack [Inst]                --
-  | TupleInst [Inst]              --
-  | ListPMInst [Inst] Inst        --
-  | ImportInst String             --
-  | NegateInst Inst               --
-  | TNothing                      -- For empty places
-  | Ignore                        -- _
-  | Error String                  -- For format errors
-  deriving (Show, Read, Eq)
 
-replace wt ch list
-  = map (\x -> if x == wt then ch else x) list
-
-parseAst (Void) = TNothing
-parseAst (Decl x) = DeclVar x
-parseAst (Call (Num a) [(Num b)]) = PushConst $ (show a) ++ "." ++ (show b) ++ "f"
-parseAst (Ident "_") = Ignore
-parseAst (Ident x) = PushVar x
-parseAst (CharString x) = CallFunction (PushVar "mkstr") [PushString x]
-parseAst (CharByte x) = PushChar x
-parseAst (Num x) = PushConst (show x)
-parseAst (Assign e1 e2) = AssignTo (parseAst e1) (parseAst e2)
-parseAst (Take e1 e2) = DoTake (parseAst e1) (parseAst e2)
-parseAst (Expo e1 e2) = CallFunction (PushVar "pow") [parseAst e1, parseAst e2]
-parseAst (Concat e1 e2) = ConcatList (parseAst e1) (parseAst e2)
-parseAst (Import e1) = ImportInst $ (replace '.' '/' e1) ++ ".hpp"
-parseAst (Negate e1) = NegateInst $ parseAst e1
-
-parseAst (Add e1 e2) = Operation "+" (parseAst e1) (parseAst e2)
-parseAst (Sub e1 e2) = Operation "-" (parseAst e1) (parseAst e2)
-parseAst (Mul e1 e2) = Operation "*" (parseAst e1) (parseAst e2)
-parseAst (Div e1 e2) = Operation "/" (parseAst e1) (parseAst e2)
-parseAst (Mod e1 e2) = Operation "%" (parseAst e1) (parseAst e2)
-parseAst (Grt e1 e2) = Operation ">" (parseAst e1) (parseAst e2)
-parseAst (Let e1 e2) = Operation "<" (parseAst e1) (parseAst e2)
-
-parseAst (Equ e1 e2) = Operation "==" (parseAst e1) (parseAst e2)
-parseAst (Not e1 e2) = Operation "!=" (parseAst e1) (parseAst e2)
-parseAst (Ge  e1 e2) = Operation ">=" (parseAst e1) (parseAst e2)
-parseAst (Le  e1 e2) = Operation "<=" (parseAst e1) (parseAst e2)
-
-parseAst (In e1 e2) = Range (parseAst e1) (parseAst e2)
-parseAst (For e1 e2 (When e3))
-  = let
-      ranges = parseAst e2
-
-      var' = (\(Range x _) -> x) ranges
-      range' = (\(Range _ l) -> l) ranges
-      result' = parseAst e1
-      condition' = case e3 of
-                    Void -> PushConst "true"
-                    _ -> parseAst e3
-
-    in
-      ForList (Lambda [var'] result') range' (Lambda [var'] condition')
-
-parseAst (CountList e1 e2) = MakeCountList (parseAst e1) (parseAst e2)
-parseAst (ComprehensionList xs) = MakeSimpleList (map parseAst xs)
-parseAst (Parens e1) = Block (parseAst e1)
-parseAst (Def name args body) = Function (parseAst name) (map parseAst args) (parseAst body)
-parseAst (LambdaDef args body) = Lambda (map parseAst args) (parseAst body)
-parseAst (Call name args) = CallFunction (parseAst name) (map parseAst args)
-parseAst (Condition stat thenStat elseStat) = Block $ MakeCondition (parseAst stat) (parseAst thenStat) (parseAst elseStat)
-parseAst (IsEither e1 e2) = CallFunction (PushVar "elem") [parseAst e1, MakeSimpleList $ map parseAst e2]
-parseAst (IsNeither e1 e2) = Block $ CallFunction (PushVar "!elem") [parseAst e1, MakeSimpleList $ map parseAst e2]
-parseAst (DoIn e1 e2) = DoStack $ map parseAst (e1 ++ [e2])
-parseAst (Tuple e) = TupleInst $ map parseAst e
-parseAst (ListPM e1 e2) = ListPMInst (map parseAst e1) (parseAst e2)
-parseAst (Special x) = PushVar $ show x
-parseAst _ = TNothing
-
+{-----------------------------
+        Code Generator
+-----------------------------}
 
 execute :: [Token] -> Either String [String]
 execute stack
