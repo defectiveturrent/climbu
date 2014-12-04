@@ -163,6 +163,9 @@ translate stack inst
       PushConst x ->
         x
 
+      PushConstf x ->
+        x
+
       PushChar x ->
         if x == '\''
           then
@@ -379,6 +382,9 @@ getLabel expr
       PushConst _ ->
         IntLabel
 
+      PushConstf _ ->
+        FloatLabel
+
       PushChar _ ->
         CharLabel
 
@@ -431,7 +437,7 @@ getLabel expr
       DoStack x ->
         getLabel $ last x
 
-      Operation operator _ _ ->
+      Operation operator a b ->
         case operator of
           ">" ->
             BoolLabel
@@ -448,7 +454,16 @@ getLabel expr
           "/" ->
             FloatLabel
           _ ->
-            IntLabel
+            let
+              alabel = getLabel a
+              blabel = getLabel b
+            in
+              if alabel == IntLabel
+                then
+                  if blabel == IntLabel
+                    then IntLabel
+                    else FloatLabel
+                else alabel
 
       Block x ->
         getLabel x

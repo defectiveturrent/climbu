@@ -23,10 +23,11 @@ type Tokens = [Token]
 data Token
   = CONST Int
   | CONSTF Float
-  | VAR
-  | ID String
+  | DECLARE
+  | IDENT String
   | STRING String
   | CHAR Char
+  | IMPORT1
   | IMPORT String
   | RARROW
   | LARROW
@@ -34,46 +35,86 @@ data Token
   | MINUS
   | MUL
   | DIV
-  | GREATERTHAN
-  | GREATEREQUAL
-  | LESSTHAN
-  | LESSEQUAL
+  | GRTH
+  | GRTHEQ
+  | LSTH
+  | LSTHEQ
   | EQUAL
   | NOT
   | MOD
-  | EXPO
+  | EXP
+  | AND
+  | OR
   | ASSIGN
   | WITH
   | COMMA
   | CALLARGS
-  | OPCALLFUNC String
+  | OPCALLFUNCTION String
+  | CALL1
   | CALLALONE String
   | COMMENT
   | COUNTLIST
   | CONCATLIST
   | OPENPAREN
   | CLOSEPAREN
-  | OPENBRACKETS
-  | CLOSEBRACKETS
-  | OPENKEYS
-  | CLOSEKEYS
+  | OPENLIST
+  | CLOSELIST
   | LAMBDA
   | IF
   | THEN
   | ELSE
+  | ELSEIF
   | ISEITHER
   | ISNEITHER
-  | WHILE
   | FOR
   | DO
   | IN
   | WHEN
-  | FUNC
+  | FUNCTION
   | TAKE
   | LISTPATTERNMATCHING
   | NULLSTRING
+  | VOIDARGUMENTS
   | NULL
   | YADAYADA
-  | VOID
+  | VOIDENT
   | EOF  -- End of line
   deriving (Show, Read, Eq)
+
+-- All possibles white spaces
+whitespaces
+  = [ ' ' , '\t' , '\r' , '\n' ]
+ 
+-- All digits
+digits
+  = ['0'..'9'] ++ ['.']
+ 
+-- All identifiers
+identifiers
+  = filter (/='.') $ ['a'..'z'] ++ ['A'..'Z'] ++ ['_'] ++ digits
+ 
+-- All operators
+operators
+  = ['+', '-', '*', '/', '^', '=', '%', '>', '<', ':', '.', ',', '|', '(', ')', '[', ']']
+
+-- All keywords
+keywords
+  = [ "var"
+    , "def"
+    , "lam"
+    , "if"
+    , "then"
+    , "else"
+    , "for"
+    , "in"
+    , "do"
+    , "null"
+    , "call"
+    , "import"
+    , "when"
+    , "and"
+    , "or"
+    , "not"
+    , "either"
+    , "neither"
+    ]

@@ -24,7 +24,7 @@ import Ast
 -- A set of all expression's limiters
 eofers
   = [ CLOSEPAREN
-    , CLOSEBRACKETS
+    , CLOSELIST
     , RARROW
     , LARROW
     -- , VAR -- I don't know the reason, but it's crashing the do-in expression
@@ -45,15 +45,15 @@ eofers
     , MINUS
     , MUL
     , DIV
-    , GREATERTHAN
-    , GREATEREQUAL
-    , LESSTHAN
-    , LESSEQUAL
+    , GRTH
+    , GRTHEQ
+    , LSTH
+    , LSTHEQ
     , EQUAL
     , NOT
     , MOD
-    , EXPO
-    , FUNC
+    , EXP
+    , FUNCTION
     , ASSIGN
     , ISEITHER
     , ISNEITHER

@@ -31,171 +31,6 @@ import Inst
     String to Token Parser
 -----------------------------}
 
-tokenise :: String -> Tokens
-tokenise [] = []                    -- (end of input)
-tokenise (' ':rest) = tokenise rest      -- (skip spaces)
-tokenise ('\n':rest) = tokenise rest
-tokenise ('\r':rest) = tokenise rest
-tokenise ('\t':rest) = tokenise rest
-
-tokenise ('"':'"':rest) = NULLSTRING : tokenise rest
-
-tokenise ('"':rest)
-  = let
-      subtokenise ('\\' : '"' : rest2) acc
-        = subtokenise (rest2) (acc ++ "\"")
-
-      subtokenise ('"' : rest2) acc
-        = STRING acc : tokenise rest2
-
-      subtokenise (x : rest2) acc
-        = subtokenise (rest2) (acc ++ [x])
-
-    in
-      subtokenise rest []
-
-
-tokenise ('/':'/':rest)             -- (comments)
-  = let
-      (_, rest2) = break (=='\n') rest
-
-    in
-      tokenise (if null rest2 then [] else tail rest2)
-
-tokenise ('(':'*':rest)             -- (comments)
-  = let
-      subtokenise [] = []
-      subtokenise ('*':')':rest2)
-        = tokenise rest2
-
-      subtokenise (_:rest2)
-        = subtokenise rest2
-
-    in
-      subtokenise rest
-
-tokenise (';':rest)         = EOF : tokenise rest
-tokenise ('.':'.':'.':rest) = YADAYADA : tokenise rest
-tokenise ('<':'-':rest)     = LARROW : tokenise rest
-tokenise ('-':'>':rest)     = RARROW : tokenise rest
-tokenise ('(':rest)         = OPENPAREN : tokenise rest
-tokenise (')':rest)         = CLOSEPAREN : tokenise rest
-tokenise ('[':rest)         = OPENBRACKETS : tokenise rest
-tokenise (']':rest)         = CLOSEBRACKETS : tokenise rest
-tokenise ('{':rest)         = OPENKEYS : tokenise rest
-tokenise ('}':rest)         = CLOSEKEYS : tokenise rest
-tokenise ('\'':x:'\'':rest) = CHAR x : tokenise rest
-tokenise ('.':'.':rest)     = COUNTLIST : tokenise rest
-tokenise ('.':rest)         = CALLARGS : tokenise rest
-tokenise ('+':'+':rest)     = CONCATLIST : tokenise rest
-tokenise ('+':rest)         = PLUS : tokenise rest
-tokenise ('-':rest)         = MINUS : tokenise rest
-tokenise ('*':rest)         = MUL : tokenise rest
-tokenise ('/':'=':rest)     = NOT : tokenise rest
-tokenise ('/':rest)         = DIV : tokenise rest
-tokenise ('%':rest)         = MOD : tokenise rest
-tokenise ('^':rest)         = EXPO : tokenise rest
-tokenise ('|':'>':rest)     = TAKE : tokenise rest
-tokenise ('>':'=':rest)     = GREATEREQUAL : tokenise rest
-tokenise ('>':rest)         = GREATERTHAN : tokenise rest
-tokenise ('<':'=':rest)     = LESSEQUAL : tokenise rest
-tokenise ('<':rest)         = LESSTHAN : tokenise rest
-tokenise ('=':'=':rest)     = EQUAL : tokenise rest
-tokenise ('=':rest)         = ASSIGN : tokenise rest
-tokenise (',':rest)         = COMMA : tokenise rest
-tokenise ('|':rest)         = ELSE : IF : tokenise rest
-tokenise (':':rest)         = LISTPATTERNMATCHING : tokenise rest
-
-tokenise ('`':rest)
-  = let
-      (n, '`':rest2) = getname rest
-
-    in
-      OPCALLFUNC n : tokenise rest2
-
-tokenise ('n':'u':'l':'l':[]) = [NULL]
-
-tokenise ('n':'u':'l':'l':x:rest)
-  | not $ isName x
-  = NULL : tokenise (x:rest)
-
-tokenise ('c':'a':'l':'l':x:rest)
-  | not $ isName x
-  , isName $ head rest
-  = let
-      (n, rest2) = getname rest
-
-    in 
-      CALLALONE n : tokenise rest2
-
-tokenise ('i':'m':'p':'o':'r':'t':x:rest)
-  | not $ isName x
-  = let
-      (path, rest2) = break (==';') rest
-    in
-      IMPORT path : tokenise rest2
-
-tokenise ('w':'h':'i':'l':'e':x:rest)
-  | not $ isName x = WHILE : tokenise (x:rest)
-
-tokenise ('w':'i':'t':'h':x:rest)
-  | not $ isName x = WITH : tokenise (x:rest)
-
-tokenise ('i':'f':x:rest)
-  | not $ isName x = IF : tokenise (x:rest)
-
-tokenise ('t':'h':'e':'n':x:rest)
-  | not $ isName x = THEN : tokenise (x:rest)
-
-tokenise ('e':'l':'s':'e':x:rest)
-  | not $ isName x = ELSE : tokenise (x:rest)
-
-tokenise ('d':'o':x:rest)
-  | not $ isName x = DO : tokenise (x:rest)
-
-tokenise ('f':'o':'r':x:rest)
-  | not $ isName x = FOR : tokenise (x:rest)
-
-tokenise ('v':'a':'r':x:rest)
-  | not $ isName x = VAR : tokenise (x:rest)
-
-tokenise ('i':'s':x:'e':'i':'t':'h':'e':'r':y:rest)
-  | not $ isName x
-  , not $ isName y
-    = ISEITHER : tokenise (y:rest)
-
-tokenise ('i':'s':x:'n':'e':'i':'t':'h':'e':'r':y:rest)
-  | not $ isName x
-  , not $ isName y
-    = ISNEITHER : tokenise (y:rest)
-
-tokenise ('i':'n':x:rest)
-  | not $ isName x = IN : tokenise (x:rest)
-
-tokenise ('w':'h':'e':'n':x:rest)
-  | not $ isName x = WHEN : tokenise (x:rest)
-
-tokenise ('d':'e':'f':x:rest)
-  | not $ isName x = FUNC : tokenise (x:rest)
-
-tokenise ('l':'a':'m':x:rest)
-  | not $ isName x = LAMBDA : tokenise (x:rest)
-
-tokenise (ch:rest)
-  | isDigit ch
-    = let
-        (n, rest2) = convert (ch:rest)
-      in 
-        (CONST n):(tokenise rest2)
-
-tokenise (ch:rest)
-  | isName ch
-    = let
-        (n, rest2) = getname (ch:rest)
-      in 
-        (ID n):(tokenise rest2)
-
-
 getname :: String -> (String, String) -- (name, rest)
 getname (h:str)
   | isName h = let
@@ -208,32 +43,157 @@ getname (h:str)
                in
                  (h:name, rest)
 
+-- Just letters and underscore
 isName ch
-  = isAlpha ch || ch == '_'
+  = ch `elem` identifiers \\ digits
 
+-- All
 isDigitName ch
-  = isName ch || isDigit ch
+  = ch `elem` identifiers
 
-convert :: String -> (Int, String)
-convert str
+tokenize :: String -> Tokens
+tokenize [] = []
+tokenize ('"':'"':rest) = NULLSTRING : tokenize rest
+
+tokenize ('"':rest)
   = let
-      conv' [] n = (n, [])
-      conv' (ch : str) n
-        | isDigit ch = conv' str ((n*10) + (read [ch] :: Int))
-        | otherwise  = (n, ch : str)
-    in 
-      conv' str 0
+      subtokenize ('\\' : '"' : rest2) acc
+        = subtokenize (rest2) (acc ++ "\"")
+
+      subtokenize ('"' : rest2) acc
+        = STRING acc : tokenize rest2
+
+      subtokenize (x : rest2) acc
+        = subtokenize (rest2) (acc ++ [x])
+
+    in
+      subtokenize rest []
+
+tokenize ('\'':x:'\'':rest) = CHAR x : tokenize rest
+
+-- (comments)
+tokenize ('/':'/':rest)
+  = let
+      (_, rest2) = break (=='\n') rest
+
+    in
+      tokenize (if null rest2 then [] else tail rest2)
+
+-- (comments)
+tokenize ('(':'*':rest)
+  = let
+      subtokenize [] = []
+      subtokenize ('*':')':rest2)
+        = tokenize rest2
+
+      subtokenize (_:rest2)
+        = subtokenize rest2
+
+    in
+      subtokenize rest
+
+tokenize ('`':rest)
+  = let
+      (n, '`':rest2) = getname rest
+
+    in
+      OPCALLFUNCTION n : tokenize rest2
+
+tokenize (x:xs)   | x `elem` whitespaces = tokenize xs
+                  | x `elem` digits \\ ['.'] = doDigit [x] xs
+                  | x `elem` identifiers = doIdentifier [x] xs
+                  | x `elem` operators = doOperator [x] xs
+                  | otherwise = EOF : tokenize xs
+                  where
+                    doDigit stack (d:ds)
+                      = if d `elem` digits
+                          then
+                            doDigit (stack ++ [d]) ds
+                          else
+                            (if '.' `elem` stack then CONSTF (read stack :: Float) else CONST (read stack :: Int) ) : tokenize (d:ds)
+                    
+                    doIdentifier stack (d:ds)
+                      = if d `elem` identifiers
+                          then
+                            doIdentifier (stack ++ [d]) ds
+                          else
+                            (if stack `notElem` keywords
+                              then
+                                IDENT stack
+                              else
+                                case stack of
+                                  "var"    -> DECLARE
+                                  "def"    -> FUNCTION
+                                  "lam"    -> LAMBDA
+                                  "if"     -> IF
+                                  "then"   -> THEN
+                                  "else"   -> ELSE
+                                  "for"    -> FOR
+                                  "in"     -> IN
+                                  "do"     -> DO
+                                  "null"   -> NULL
+                                  "call"   -> CALL1
+                                  "import" -> IMPORT1
+                                  "when"   -> WHEN
+                                  "and"    -> AND
+                                  "or"     -> OR
+                                  "not"    -> NOT
+                                  "either" -> ISEITHER
+                                  "neither" -> ISNEITHER ) : tokenize (d:ds)
+                    
+                    doOperator stack (d:ds)
+                      = if d `elem` operators
+                          then
+                            doOperator (stack ++ [d]) ds
+                          else
+                            (case stack of
+                              "+" -> PLUS
+                              "-" -> MINUS
+                              "*" -> MUL
+                              "/" -> DIV
+                              "=" -> ASSIGN
+                              "==" -> EQUAL
+                              "/=" -> NOT
+                              "%" -> MOD
+                              ">" -> GRTH
+                              ">=" -> GRTHEQ
+                              "<" -> LSTH
+                              "<=" -> LSTHEQ
+                              "^" -> EXP
+                              "->" -> RARROW
+                              "<-" -> LARROW
+                              ":" -> LISTPATTERNMATCHING
+                              "|" -> ELSEIF
+                              "." -> CALLARGS
+                              "," -> COMMA
+                              "++" -> CONCATLIST
+                              ".." -> COUNTLIST
+                              "..." -> YADAYADA
+                              "(" -> OPENPAREN
+                              ")" -> CLOSEPAREN
+                              "[" -> OPENLIST
+                              "]" -> CLOSELIST
+                              "()" -> VOIDARGUMENTS) : tokenize (d:ds)
 
 tokenRevision :: Tokens -> Tokens
 tokenRevision [] = []
-tokenRevision (ID x:OPCALLFUNC n:rest)
-  = ID x : OPCALLFUNC n : tokenRevision rest
+tokenRevision (IDENT x:OPCALLFUNCTION n:rest)
+  = IDENT x : OPCALLFUNCTION n : tokenRevision rest
 
-tokenRevision (FUNC:rest)
+tokenRevision (ELSEIF:rest)
+  = ELSE : IF : tokenRevision rest
+
+tokenRevision (IMPORT1:IDENT n:rest)
+  = IMPORT n : tokenRevision rest
+
+tokenRevision (CALL1:IDENT n:rest)
+  = tokenRevision $ CALLALONE n : rest
+
+tokenRevision (FUNCTION:rest)
   = let
       (body, rest2) = break (==ASSIGN) rest
     in
-      FUNC : body ++ tokenRevision rest2
+      FUNCTION : body ++ tokenRevision rest2
 
 tokenRevision (LAMBDA:rest)
   = let
@@ -253,8 +213,8 @@ tokenRevision (ISNEITHER:rest)
     in
       ISNEITHER : body ++ tokenRevision rest2
 
-tokenRevision (CLOSEPAREN:ID x:rest)
-  = CLOSEPAREN : MUL : ID x : tokenRevision rest
+tokenRevision (CLOSEPAREN:IDENT x:rest)
+  = CLOSEPAREN : MUL : IDENT x : tokenRevision rest
 
 tokenRevision (CLOSEPAREN:CONST x:rest)
   = CLOSEPAREN : MUL : CONST x : tokenRevision rest
@@ -262,34 +222,45 @@ tokenRevision (CLOSEPAREN:CONST x:rest)
 tokenRevision (CONST x:OPENPAREN:rest)
   = CONST x : MUL : OPENPAREN : tokenRevision rest
 
-tokenRevision (CONST x:ID y:rest)
-  = CONST x : MUL : ID y : tokenRevision rest
+tokenRevision (CONST x:IDENT y:rest)
+  = CONST x : MUL : IDENT y : tokenRevision rest
 
---tokenRevision ((ID x):OPENPAREN:rest)
---  = ID x : CALLARGS : OPENPAREN : tokenRevision rest
+tokenRevision (CONSTF x:OPENPAREN:rest)
+  = CONSTF x : MUL : OPENPAREN : tokenRevision rest
 
-tokenRevision (ID x:OPENBRACKETS:rest)
-  = ID x : CALLARGS : OPENBRACKETS : tokenRevision rest
+tokenRevision (CONSTF x:IDENT y:rest)
+  = CONSTF x : MUL : IDENT y : tokenRevision rest
 
-tokenRevision (ID x:OPENPAREN:rest)
+--tokenRevision ((IDENT x):OPENPAREN:rest)
+--  = IDENT x : CALLARGS : OPENPAREN : tokenRevision rest
+
+tokenRevision (IDENT x:OPENLIST:rest)
+  = IDENT x : CALLARGS : OPENLIST : tokenRevision rest
+
+tokenRevision (IDENT x:VOIDARGUMENTS:ASSIGN:rest)
+  = tokenRevision (FUNCTION : IDENT x : ASSIGN : rest)
+
+tokenRevision (IDENT x:OPENPAREN:rest)
   = formuled
   where
-    isThereSomethingWrong
+    isThereSomethingWrong [] = False
+    isThereSomethingWrong what
       = foldr
         (\x acc -> case x of
-             ID _ -> acc
+             IDENT _ -> acc
              _ -> True )
         False
+        what
 
     formuled = if isThereSomethingWrong args
                 then
-                  ID x : CALLARGS : OPENPAREN : tokenRevision rest
+                  IDENT x : CALLARGS : OPENPAREN : tokenRevision rest
                 else
-                  tokenRevision (FUNC : ID x : (args ++ as))
+                  tokenRevision (FUNCTION : IDENT x : (args ++ as))
 
     (args, CLOSEPAREN:as) = break (==CLOSEPAREN) rest
 
-tokenRevision ((ID x):rest)
+tokenRevision ((IDENT x):rest)
   = let
       (arguments, rest2) = getUntilEofer ([], rest)
 
@@ -303,9 +274,9 @@ tokenRevision ((ID x):rest)
     in
       if null arguments
         then
-          (ID x) : tokenRevision rest
+          (IDENT x) : tokenRevision rest
         else
-          [OPENPAREN, ID x, CALLARGS] ++ arguments ++ [CLOSEPAREN] ++ tokenRevision rest2
+          [OPENPAREN, IDENT x, CALLARGS] ++ arguments ++ [CLOSEPAREN] ++ tokenRevision rest2
 
 tokenRevision (STRING a : STRING b : rest)
   = STRING a : CONCATLIST : tokenRevision (STRING b : rest)
@@ -314,8 +285,9 @@ tokenRevision (x:rest) = x : tokenRevision rest
 
 parseTokens :: String -> Tokens
 parseTokens
-  = tokenRevision . tokenise
+  = applyTwice tokenRevision . tokenize
 
+applyTwice f = f . f
 
 {-----------------------------
       Token to Ast Parser
@@ -347,11 +319,11 @@ parseEofs tokens
 
 
 parseFactors :: Tokens -> (Ast, Tokens)
-parseFactors (VAR:(ID x):rest)
+parseFactors (DECLARE:(IDENT x):rest)
   = (Decl x, rest)
 
 -- Parse idents
-parseFactors ((ID x):rest)
+parseFactors ((IDENT x):rest)
   = (Ident x, rest)
 
 parseFactors ((STRING str):rest)
@@ -363,6 +335,9 @@ parseFactors ((CHAR ch):rest)
 -- Parse numbers
 parseFactors ((CONST x):rest)
   = (Num x, rest)
+
+parseFactors ((CONSTF x):rest)
+  = (Numf x, rest)
 
 parseFactors (YADAYADA:rest)
   = (Call (Ident "alert") [CharString "Not yet implemented"], rest)
@@ -451,10 +426,10 @@ parseFactors ((OPENPAREN):rest)
           other ->
             astRevision (Parens parsedExpression, restParen)
 
-parseFactors ((OPENBRACKETS):(CLOSEBRACKETS):rest)
+parseFactors ((OPENLIST):(CLOSELIST):rest)
   = (Special NuL, rest)
 
-parseFactors ((OPENBRACKETS):rest)
+parseFactors ((OPENLIST):rest)
   = let
       (bracket, restBracket) = getRightList rest
 
@@ -462,24 +437,24 @@ parseFactors ((OPENBRACKETS):rest)
         = let
             check (n, acc, (y:[]))
               = case y of
-                  OPENBRACKETS ->
+                  OPENLIST ->
                     (n + 1, acc, [EOF])
 
-                  CLOSEBRACKETS ->
+                  CLOSELIST ->
                     if n == 0 then
                       (0, acc ++ [y], [])
                     else
-                      (n - 1, acc ++ [y], [CLOSEBRACKETS])
+                      (n - 1, acc ++ [y], [CLOSELIST])
 
                   othertoken ->
                     (n, acc ++ [y], [othertoken])
 
             check (n, acc, (y:ys))
               = case y of
-                  OPENBRACKETS ->
+                  OPENLIST ->
                     check (n + 1, acc ++ [y], ys) -- ++ [y]
 
-                  CLOSEBRACKETS ->
+                  CLOSELIST ->
                     if n == 0 then
                       (0, acc ++ [y], ys) -- ++ [y]
                       else
@@ -573,9 +548,9 @@ parseAllFactors tokens'
         = let
             (nast, rest) = parseHighExp tokens
 
-            nextToken = if null rest then VOID else head rest
+            nextToken = if null rest then VOIDENT else head rest
           in
-            if (nextToken /= VOID) && not (nextToken `elem` eofers)
+            if (nextToken /= VOIDENT) && not (nextToken `elem` eofers)
               then
                 parsef' (ast ++ [nast], rest)
 
@@ -613,9 +588,9 @@ parseEachFactor tokens'
         = let
             (nast, rest) = parseFactors tokens
 
-            nextToken = if null rest then VOID else head rest
+            nextToken = if null rest then VOIDENT else head rest
           in
-            if (nextToken /= VOID) && not (nextToken `elem` eofers)
+            if (nextToken /= VOIDENT) && not (nextToken `elem` eofers)
               then
                 parsef' (ast ++ [nast], rest)
 
@@ -633,7 +608,7 @@ parseHighExp tokens@(_:[])
 
 parseHighExp tokens@( prefixToken : restTokens )
   = case prefixToken of
-      FUNC ->
+      FUNCTION ->
         let
           (stat : rest) = restTokens -- Separates tokens in prefix, stat and rest
 
@@ -727,25 +702,25 @@ parseExp tokens
                               Div factortree subexptree
                         ), checkComma rest3 )
 
-        (GREATERTHAN : rest2) ->
+        (GRTH : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
             astRevision ( Grt factortree subexptree, rest3 )
 
-        (GREATEREQUAL : rest2) ->
+        (GRTHEQ : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
             astRevision ( Ge factortree subexptree, rest3 )
 
-        (LESSTHAN : rest2) ->
+        (LSTH : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
             astRevision ( Let factortree subexptree, rest3 )
 
-        (LESSEQUAL : rest2) ->
+        (LSTHEQ : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
@@ -787,7 +762,7 @@ parseExp tokens
           in
             ( Take factortree subexptree, rest3 )
 
-        (EXPO : rest2) ->
+        (EXP : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
@@ -799,7 +774,7 @@ parseExp tokens
           in
             ( Concat factortree subexptree, rest3 )
 
-        (OPCALLFUNC n : rest2) ->
+        (OPCALLFUNCTION n : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
@@ -880,12 +855,12 @@ astRevision pair = pair
 
 parseAst (Void) = TNothing
 parseAst (Decl x) = DeclVar x
-parseAst (Call (Num a) [(Num b)]) = PushConst $ (show a) ++ "." ++ (show b) ++ "f"
 parseAst (Ident "_") = Ignore
 parseAst (Ident x) = PushVar x
 parseAst (CharString x) = CallFunction (PushVar "mkstr") [PushString x]
 parseAst (CharByte x) = PushChar x
 parseAst (Num x) = PushConst (show x)
+parseAst (Numf x) = PushConstf (show x ++ "f")
 parseAst (Assign e1 e2) = AssignTo (parseAst e1) (parseAst e2)
 parseAst (Take e1 e2) = DoTake (parseAst e1) (parseAst e2)
 parseAst (Expo e1 e2) = CallFunction (PushVar "pow") [parseAst e1, parseAst e2]

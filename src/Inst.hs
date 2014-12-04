@@ -23,6 +23,7 @@ type Insts = [Inst]
 data Inst
   = PushVar String
   | PushConst String
+  | PushConstf String
   | PushChar Char
   | PushString String
   | DeclVar String

@@ -71,7 +71,7 @@ compile (executable:pathsource:_)
           do
             filebyteName <- return $ executable ++ ".cpp"
             writeFile filebyteName clines
-            system $ "g++ -std=c++14 -o" ++ executable ++ " " ++ filebyteName
+            system $ "clang++ -std=c++14 -Wc++11-extensions -o" ++ executable ++ " " ++ filebyteName
             return ()
 
         Left msg ->
