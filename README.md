@@ -27,13 +27,13 @@ I like to teach a lot of nice guys around. But it's complex for him, because it 
   + Well, the functions' body are simple, not much complex, the language is not for large codes or whatever you think, it's to make good algorithms in the simple and better way.
 
 ## Documentation?
-It's coming yet. Not finished.
+It's coming yet. Not finished. However, you can see the progress here: [Climbu documentation](http://climbu.readthedocs.org/en/latest/)
 
 ## The versions
 Climbu has named versions (since v1.3) where the first named version is "I'm a zygote". This is just for fun.
 
 ## You need to read this
-Well, at first, climbu wore the GNU/g++ compiler. Now it uses the clang compiler. Why? I think clang is better for this, and I like clang. So, to run climbu, you need to install clang in your computer. I know that clang is cross-platform, so it's good! You can install it in your linux or windows (I don't know about MacOS). Anyway, you can find clang here: http://clang.llvm.org .
+Well, at first, climbu wore the GNU/g++ compiler. Now it uses the clang compiler. Why? I think clang is better for this, and I like clang. So, to run climbu, you need to install clang in your computer. I know that clang is cross-platform, so it's good! You can install it in your linux or windows (I don't know about MacOS). Anyway, you can find clang here: [Clang](http://clang.llvm.org).
 
 ## The license
 This project is lincensed under GPLv3, so you are free to do everything (or almost everything) with my language.
