@@ -31,6 +31,11 @@ import Inst
     String to Token Parser
 -----------------------------}
 
+stringRevision [] = []
+stringRevision ('.':'.':'.':rest) = " ... " ++ stringRevision rest
+stringRevision ('.':'.':rest) = " .. " ++ stringRevision rest
+stringRevision (x:xs) = x : stringRevision xs
+
 getname :: String -> (String, String) -- (name, rest)
 getname (h:str)
   | isName h = let
@@ -50,6 +55,8 @@ isName ch
 -- All
 isDigitName ch
   = ch `elem` identifiers
+
+howManyTimes x xs = length $ x `elemIndices` xs
 
 tokenize :: String -> Tokens
 tokenize [] = []
@@ -92,6 +99,9 @@ tokenize ('(':'*':rest)
     in
       subtokenize rest
 
+tokenize ('(':')':rest)
+  = VOIDARGUMENTS : tokenize rest
+
 tokenize ('`':rest)
   = let
       (n, '`':rest2) = getname rest
@@ -99,18 +109,25 @@ tokenize ('`':rest)
     in
       OPCALLFUNCTION n : tokenize rest2
 
-tokenize (x:xs)   | x `elem` whitespaces = tokenize xs
-                  | x `elem` digits \\ ['.'] = doDigit [x] xs
-                  | x `elem` identifiers = doIdentifier [x] xs
-                  | x `elem` operators = doOperator [x] xs
+tokenize (x:xs)   | x `elem` whitespaces      = tokenize xs
+                  | x `elem` digits \\ ['.']  = doDigit [x] xs
+                  | x `elem` identifiers      = doIdentifier [x] xs
+                  | x `elem` complexOperators = doComplexOperator [x] xs
+                  | x `elem` operators        = doOperator [x] xs
                   | otherwise = EOF : tokenize xs
                   where
                     doDigit stack (d:ds)
                       = if d `elem` digits
                           then
                             doDigit (stack ++ [d]) ds
-                          else
-                            (if '.' `elem` stack then CONSTF (read stack :: Float) else CONST (read stack :: Int) ) : tokenize (d:ds)
+                          else let
+                                  indices = howManyTimes '.' stack
+                                in
+                                (if indices == 1
+                                  then
+                                    CONSTF (read stack :: Float)
+                                  else
+                                    CONST (read stack :: Int)) : tokenize (d:ds)
                     
                     doIdentifier stack (d:ds)
                       = if d `elem` identifiers
@@ -141,10 +158,18 @@ tokenize (x:xs)   | x `elem` whitespaces = tokenize xs
                                   "either" -> ISEITHER
                                   "neither" -> ISNEITHER ) : tokenize (d:ds)
                     
+                    doComplexOperator stack ds
+                      = (case stack of
+                          "(" -> OPENPAREN
+                          ")" -> CLOSEPAREN
+                          "[" -> OPENLIST
+                          "]" -> CLOSELIST) : tokenize ds
+
                     doOperator stack (d:ds)
                       = if d `elem` operators
                           then
-                            doOperator (stack ++ [d]) ds
+                             doOperator (stack ++ [d]) ds
+                          
                           else
                             (case stack of
                               "+" -> PLUS
@@ -168,12 +193,7 @@ tokenize (x:xs)   | x `elem` whitespaces = tokenize xs
                               "," -> COMMA
                               "++" -> CONCATLIST
                               ".." -> COUNTLIST
-                              "..." -> YADAYADA
-                              "(" -> OPENPAREN
-                              ")" -> CLOSEPAREN
-                              "[" -> OPENLIST
-                              "]" -> CLOSELIST
-                              "()" -> VOIDARGUMENTS) : tokenize (d:ds)
+                              "..." -> YADAYADA) : tokenize (d:ds)
 
 tokenRevision :: Tokens -> Tokens
 tokenRevision [] = []
@@ -285,7 +305,7 @@ tokenRevision (x:rest) = x : tokenRevision rest
 
 parseTokens :: String -> Tokens
 parseTokens
-  = applyTwice tokenRevision . tokenize
+  = applyTwice tokenRevision . tokenize . stringRevision
 
 applyTwice f = f . f
 
@@ -366,113 +386,44 @@ parseFactors (OPENPAREN:MINUS:rest)
       (Negate parsed, rest2)
 
 -- Parse parentheses
-parseFactors ((OPENPAREN):rest)
+parseFactors (OPENPAREN:rest)
   = let
-      -- [Token], [Token]
-      (paren, restParen) = getRightParentheses rest
+      parseXpr (xpr, CLOSEPAREN:rest2)
+        = (Parens xpr, rest2)
 
-      getRightParentheses xs
+      parseXpr (xpr, COMMA:rest2)
         = let
-            check (n, acc, (y:[]))
-              = case y of
-                  OPENPAREN ->
-                    (n + 1, acc ++ [y], [EOF]) -- ++ [y]
-
-                  CLOSEPAREN ->
-                    if n == 0 then
-                      (0, acc ++ [y], []) -- ++ [y]
-                    else
-                      (n - 1, acc ++ [y], [CLOSEPAREN])
-
-                  othertoken ->
-                    (n, acc ++ [y], [othertoken])
-
-            check (n, acc, (y:ys))
-              = case y of
-                  OPENPAREN ->
-                    check (n + 1, acc ++ [y], ys) -- ++ [y]
-
-                  CLOSEPAREN ->
-                    if n == 0 then
-                      (0, acc ++ [y], ys) -- ++ [y]
-                      else
-                        check (n - 1, acc ++ [y], ys)
-
-                  othertoken ->
-                    check (n, acc ++ [y], ys)
-
-            (_, parenCheck, restCheck) = check (0, [], xs)
-
+            subparse stack (expr, COMMA:xs) = subparse (stack ++ [expr]) (parseHighExp xs)
+            subparse stack (expr, CLOSEPAREN:xs) = (Tuple (stack ++ [expr]), xs)
           in
-            (parenCheck, restCheck)
+            subparse [xpr] (parseHighExp rest2)
     in
-      let
-        -- get the head of rest of tokens and checks if there's a comma (below)
-        (parsedExpression, restTokens) = parseHighExp paren
-      in
-        case head restTokens of
-          COMMA ->
-            (Tuple (parseSeparators paren), restParen)
-
-          LISTPATTERNMATCHING ->
-            let
-              factors = parseSeparators paren
-              heads = init factors
-              rtail = last factors
-
-            in
-              (ListPM heads rtail, restParen)
-
-          other ->
-            astRevision (Parens parsedExpression, restParen)
+      astRevision . parseXpr . parseHighExp $ rest
 
 parseFactors ((OPENLIST):(CLOSELIST):rest)
   = (Special NuL, rest)
 
-parseFactors ((OPENLIST):rest)
+parseFactors (OPENLIST:rest)
   = let
-      (bracket, restBracket) = getRightList rest
-
-      getRightList xs
+      -- subparse stack (expr, COUNTLIST:xs) = let (e, CLOSELIST:r) = parseHighExp xs in (CountList expr e, r)
+      parseXpr (xpr, COUNTLIST:rest2)
         = let
-            check (n, acc, (y:[]))
-              = case y of
-                  OPENLIST ->
-                    (n + 1, acc, [EOF])
-
-                  CLOSELIST ->
-                    if n == 0 then
-                      (0, acc ++ [y], [])
-                    else
-                      (n - 1, acc ++ [y], [CLOSELIST])
-
-                  othertoken ->
-                    (n, acc ++ [y], [othertoken])
-
-            check (n, acc, (y:ys))
-              = case y of
-                  OPENLIST ->
-                    check (n + 1, acc ++ [y], ys) -- ++ [y]
-
-                  CLOSELIST ->
-                    if n == 0 then
-                      (0, acc ++ [y], ys) -- ++ [y]
-                      else
-                        check (n - 1, acc ++ [y], ys)
-
-                  othertoken ->
-                    check (n, acc ++ [y], ys)
-
-            (_, listCheck, restCheck) = check (0, [], xs)
-
+            (e, CLOSELIST:r) = parseHighExp rest2
           in
-            (listCheck, restCheck)
+            (CountList xpr e, r)
+
+      parseXpr (xpr, COMMA:rest2)
+        = let
+            subparse stack (expr, COMMA:xs) = subparse (stack ++ [expr]) (parseHighExp xs)
+            subparse stack (expr, CLOSELIST:xs) = (ComprehensionList (stack ++ [expr]), xs)
+          in
+            subparse [xpr] (parseHighExp rest2)
     in
-      astRevision (ComprehensionList (parseSeparators $ bracket), restBracket)
+      astRevision . parseXpr . parseHighExp $ rest
 
 -- IF Expression
 --
-parseFactors ((IF):rest)
+parseFactors (IF:rest)
   = let
       (stat, restStat) = parseHighExp rest
       (Then thenStat, restThen) = parseHighExp restStat
@@ -517,30 +468,6 @@ parseFactor :: Token -> Ast
 parseFactor token
   = fst $ parseFactors [token]
 
-
--- Parse expressions separated by commas
-parseSeparators :: Tokens -> Asts
-parseSeparators [] = []
-parseSeparators t
-  = let
-      tuple@(content, tokens) = parseHighExp t
-
-      checkExpression (content, COUNTLIST:rest)
-        = [CountList content (fst $ parseHighExp rest)]
-
-      checkExpression (content, COMMA:rest)
-        = content : parseSeparators rest
-
-      checkExpression (content, [])
-        = [content]
-
-    in
-      if null (checkComma tokens)
-        then
-          [content]
-        else
-          checkExpression tuple
-
 parseAllFactors :: Tokens -> (Asts, Tokens)
 parseAllFactors tokens'
   = let
@@ -562,24 +489,6 @@ parseAllFactors tokens'
 checkComma :: Tokens -> Tokens
 checkComma tokens
   = (if (not $ null tokens) && (head tokens == COMMA) then tail else id) tokens
-
-parseAllFactorsCommas :: Tokens -> (Asts, Tokens)
-parseAllFactorsCommas tokens'
-  = let
-      parsef' (ast, tokens)
-        = let
-            (nast, rest) = parseHighExp tokens
-            eofers'wc = filter (/=COMMA) eofers
-
-          in
-            if (null rest) || (head rest) `elem` eofers'wc
-              then
-                (ast ++ [nast], rest)
-
-              else
-                parsef' (ast ++ [nast], tail rest)
-     in
-      parsef' ([], tokens')
 
 parseEachFactor :: Tokens -> (Asts, Tokens)
 parseEachFactor tokens'
