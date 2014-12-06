@@ -28,10 +28,9 @@ Cradle of your code
 -------------------
 So, can we start? Okay!
 
-Arithmetic operators
-++++++++++++++++++++
+Operators
++++++++++
 Climbu, like other languages, has arithmetic operators. Not only arithmetic operators, but also mathematic expressions. First, what about to take a look at the operators? ::
-
    >>> 4 + 2
    6
 
@@ -44,4 +43,85 @@ Climbu, like other languages, has arithmetic operators. Not only arithmetic oper
    >>> 4 * 2 ^ 2
    16
 
-Ok, I think that's enough.
+   >>> 4 % 2
+   0
+
+Ok, I think that's enough. Well, Climbu has all operators that are common in other languages (such as +, -, *, /, % etc).
+
+Logical operators
++++++++++++++++++
+We have the operators 'and' and 'or' for logic operation. ::
+   >>> true and true
+   true
+
+   >>> true and false
+   false
+
+   >>> false or true
+   true
+
+   >>> true and 4
+   4
+
+Oh yeap, these operators return the second sentence when it comes right or something like. ::
+   >>> false or 4
+   4
+
+   >>> false and 8
+   false
+
+   >>> true and 2
+   2
+
+   >>> true or 4
+   true
+
+To compare date, you can use the comparison operators: ::
+   >>> 4 == 4
+   true
+
+   >>> 1 == 9
+   false
+
+   >>> "heya" == "heya"
+   true
+
+   >>> 4 /= 4
+   false
+
+   >>> 4 /= 3
+   true
+
+We can compare strings and lists and it'll works. ::
+   >>> ['a', 'b', 'c'] == "abc"
+   true
+
+However I'll talk about it later.
+
+Mathematic expressions
+++++++++++++++++++++++
+No one has ever seen anything like this (I presume): ::
+   >>> var x = 2;
+   2
+
+   >>> 2x
+   4
+
+Yeap. Climbu has the mathematic-multiplication-like operation. You can suffix a variable onto a number and will multiply. You can also put parentheses to multiply: ::
+   >>> (7 - 2)(4 + 2)
+   30
+
+And more: ::
+   >>> var x = 2;
+   2
+
+   >>> (7 - 2)x
+   10
+
+   >>> x(7 - 2)
+   10
+
+   >>> 2(-4)
+   -8
+
+I think it is very cool.
