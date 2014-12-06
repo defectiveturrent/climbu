@@ -31,6 +31,7 @@ So, can we start? Okay!
 Operators
 +++++++++
 Climbu, like other languages, has arithmetic operators. Not only arithmetic operators, but also mathematic expressions. First, what about to take a look at the operators? ::
+
    >>> 4 + 2
    6
 
@@ -51,6 +52,7 @@ Ok, I think that's enough. Well, Climbu has all operators that are common in oth
 Logical operators
 +++++++++++++++++
 We have the operators 'and' and 'or' for logic operation. ::
+
    >>> true and true
    true
 
@@ -64,6 +66,7 @@ We have the operators 'and' and 'or' for logic operation. ::
    4
 
 Oh yeap, these operators return the second sentence when it comes right or something like. ::
+
    >>> false or 4
    4
 
@@ -77,6 +80,7 @@ Oh yeap, these operators return the second sentence when it comes right or somet
    true
 
 To compare date, you can use the comparison operators: ::
+
    >>> 4 == 4
    true
 
@@ -93,6 +97,7 @@ To compare date, you can use the comparison operators: ::
    true
 
 We can compare strings and lists and it'll works. ::
+
    >>> ['a', 'b', 'c'] == "abc"
    true
 
@@ -101,6 +106,7 @@ However I'll talk about it later.
 Mathematic expressions
 ++++++++++++++++++++++
 No one has ever seen anything like this (I presume): ::
+
    >>> var x = 2;
    2
 
@@ -108,10 +114,12 @@ No one has ever seen anything like this (I presume): ::
    4
 
 Yeap. Climbu has the mathematic-multiplication-like operation. You can suffix a variable onto a number and will multiply. You can also put parentheses to multiply: ::
+
    >>> (7 - 2)(4 + 2)
    30
 
 And more: ::
+
    >>> var x = 2;
    2
 
