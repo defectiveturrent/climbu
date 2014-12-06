@@ -47,7 +47,7 @@ Climbu, like other languages, has arithmetic operators. Not only arithmetic oper
    >>> 4 % 2
    0
 
-Ok, I think that's enough. Well, Climbu has all operators that are common in other languages (such as +, -, *, /, % etc).
+Ok, I think that's enough. Well, Climbu has all operators that are common in other languages r"""(such as +, -, *, /, % etc)""".
 
 Logical operators
 +++++++++++++++++
@@ -165,4 +165,4 @@ Everything. You can put numbers, strings, lists, lambdas, that is, everything.
    >>> f 1 2
    3
 
-Since you declared the variable, you can change its value without using the keyword __var__. You can also change their values with no cares about its type. 
+Since you declared the variable, you can change its value without using the keyword ``var``. You can also change their values with no cares about its type. 
