@@ -165,4 +165,4 @@ Everything. You can put numbers, strings, lists, lambdas, that is, everything.
    >>> f 1 2
    3
 
-Since you declared the variable, you can change its value without using the keyword __var__. You can 
+Since you declared the variable, you can change its value without using the keyword __var__. You can also change their values with no cares about its type.
