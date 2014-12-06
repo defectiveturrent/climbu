@@ -47,7 +47,7 @@ Climbu, like other languages, has arithmetic operators. Not only arithmetic oper
    >>> 4 % 2
    0
 
-Ok, I think that's enough. Well, Climbu has all operators that are common in other languages r"""(such as +, -, *, /, % etc)""".
+Ok, I think that's enough. Well, Climbu has all operators that are common in other languages (such as ``+``, ``-``, ``*``, ``/``, ``%`` etc).
 
 Logical operators
 +++++++++++++++++
