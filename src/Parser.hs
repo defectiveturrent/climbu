@@ -23,6 +23,7 @@ import Data.List
 import Data.Maybe
 import Data.String.Utils
 import Expressions
+import ErrorHandler
 import Token
 import Ast
 import Inst
@@ -114,7 +115,8 @@ tokenize (x:xs)   | x `elem` whitespaces      = tokenize xs
                   | x `elem` identifiers      = doIdentifier [x] xs
                   | x `elem` complexOperators = doComplexOperator [x] xs
                   | x `elem` operators        = doOperator [x] xs
-                  | otherwise = EOF : tokenize xs
+                  | x == ';'                  = EOF : tokenize xs
+                  | otherwise                 = report UnknownToken (show x) (show (x:xs))
                   where
                     doDigit stack (d:ds)
                       = if d `elem` digits
@@ -197,6 +199,11 @@ tokenize (x:xs)   | x `elem` whitespaces      = tokenize xs
 
 tokenRevision :: Tokens -> Tokens
 tokenRevision [] = []
+tokenRevision al@(DECLARE:IDENT x:some:rest)
+  = case some of
+      ASSIGN -> DECLARE : IDENT x : ASSIGN : tokenRevision rest
+      _ -> report BadVarDeclaration (showt [DECLARE,IDENT x, some]) (showt al)
+
 tokenRevision (IDENT x:OPCALLFUNCTION n:rest)
   = IDENT x : OPCALLFUNCTION n : tokenRevision rest
 
@@ -335,7 +342,7 @@ parseEofs tokens
                   -> Left msg
 
       else
-        Left $ "Something got wrong: " ++ show exprest
+        Left $ mkmsg ExcessRubbish (showt exprest) (showt pretokens)
 
 
 parseFactors :: Tokens -> (Ast, Tokens)
@@ -374,7 +381,7 @@ parseFactors ((NULLSTRING):rest)
 parseFactors ((NULL):rest)
   = (Special Null, rest)
 
-parseFactors ((OPENPAREN):(CLOSEPAREN):rest)
+parseFactors (OPENPAREN:CLOSEPAREN:rest)
   = (Special NuT, rest)
 
 parseFactors (OPENPAREN:MINUS:rest)
@@ -386,7 +393,7 @@ parseFactors (OPENPAREN:MINUS:rest)
       (Negate parsed, rest2)
 
 -- Parse parentheses
-parseFactors (OPENPAREN:rest)
+parseFactors al@(OPENPAREN:rest)
   = let
       parseXpr (xpr, CLOSEPAREN:rest2)
         = (Parens xpr, rest2)
@@ -397,15 +404,16 @@ parseFactors (OPENPAREN:rest)
             subparse stack (expr, CLOSEPAREN:xs) = (Tuple (stack ++ [expr]), xs)
           in
             subparse [xpr] (parseHighExp rest2)
+
+      parseXpr (xpr, r) = report BadMethod "Lost parentheses" (showt al)
     in
       astRevision . parseXpr . parseHighExp $ rest
 
-parseFactors ((OPENLIST):(CLOSELIST):rest)
-  = (Special NuL, rest)
+parseFactors al@(OPENLIST:CLOSELIST:rest)
+  = report BadList "Empty list can't exists" (showt al)
 
-parseFactors (OPENLIST:rest)
+parseFactors al@(OPENLIST:rest)
   = let
-      -- subparse stack (expr, COUNTLIST:xs) = let (e, CLOSELIST:r) = parseHighExp xs in (CountList expr e, r)
       parseXpr (xpr, COUNTLIST:rest2)
         = let
             (e, CLOSELIST:r) = parseHighExp rest2
@@ -418,16 +426,23 @@ parseFactors (OPENLIST:rest)
             subparse stack (expr, CLOSELIST:xs) = (ComprehensionList (stack ++ [expr]), xs)
           in
             subparse [xpr] (parseHighExp rest2)
+
+      parseXpr (xpr, r) = report BadList "Lost brackets" (showt al)
     in
       astRevision . parseXpr . parseHighExp $ rest
 
--- IF Expression
---
+-- If expression
 parseFactors (IF:rest)
   = let
       (stat, restStat) = parseHighExp rest
-      (Then thenStat, restThen) = parseHighExp restStat
-      (Else elseStat, restElse) = parseHighExp restThen
+      (Then thenStat, restThen) = getExp $ parseHighExp restStat
+      (Else elseStat, restElse) = getExp $ parseHighExp restThen
+
+      getExp (Then stat, r) = (Then stat, r)
+      getExp (Else Eof, r) = report IncompleteIfBlock (showt (IF:rest)) (showt [ELSE, EOF])
+      getExp (Else (Else e), r) = report BadMethod (showt (IF:rest)) (showt [ELSE,ELSE])
+      getExp (Else stat, r) = (Else stat, r)
+      getExp (e, r) = report IncompleteIfBlock (showt (IF:rest)) (show e)
     
     in
       (Condition stat thenStat elseStat, restElse)
@@ -461,8 +476,7 @@ parseFactors ((WHEN):rest)
 parseFactors ((EOF):rest)
   = (Eof, rest)
 
-parseFactors (_:rest)
-  = (Special Undefined, rest)
+parseFactors tokens = report SyntaxError (showt tokens) []
 
 parseFactor :: Token -> Ast
 parseFactor token
@@ -475,9 +489,9 @@ parseAllFactors tokens'
         = let
             (nast, rest) = parseHighExp tokens
 
-            nextToken = if null rest then VOIDENT else head rest
+            nextToken = if null rest then VOID else head rest
           in
-            if (nextToken /= VOIDENT) && not (nextToken `elem` eofers)
+            if (nextToken /= VOID) && not (nextToken `elem` eofers)
               then
                 parsef' (ast ++ [nast], rest)
 
@@ -497,9 +511,9 @@ parseEachFactor tokens'
         = let
             (nast, rest) = parseFactors tokens
 
-            nextToken = if null rest then VOIDENT else head rest
+            nextToken = if null rest then VOID else head rest
           in
-            if (nextToken /= VOIDENT) && not (nextToken `elem` eofers)
+            if (nextToken /= VOID) && not (nextToken `elem` eofers)
               then
                 parsef' (ast ++ [nast], rest)
 
@@ -531,15 +545,21 @@ parseHighExp tokens@( prefixToken : restTokens )
       LAMBDA ->
         let
           arguments = if head restTokens == RARROW then [] else fst . parseAllFactors . takeWhile (/=RARROW) $ restTokens
-          (bodyFunction, rest2) = parseHighExp . tail . dropWhile (/=RARROW) $ restTokens -- Remove Assign from head (tail)
+          (bodyFunction, rest2) = parseHighExp . tail . getExp . dropWhile (/=RARROW) $ restTokens -- Remove arrow from head (tail)
+
+          getExp [] = report BadLambdaDeclaration (showt tokens) []
+          getExp rt = rt
 
         in
           (LambdaDef arguments bodyFunction, rest2)
 
       DO ->
         let
-          (declarations, IN:rest) = parseAllFactors restTokens
+          (declarations, IN:rest) = getExp $ parseAllFactors restTokens
           (todo, rest2) = parseHighExp rest
+
+          getExp (d, IN:r) = (d, IN:r)
+          getExp (d, r) = report IncompleteDoBlock (showt tokens) (showt r)
         
         in
           (DoIn declarations todo, rest2)

@@ -18,6 +18,9 @@
 
 module Token where
 
+import Data.List
+import ErrorHandler
+
 type Tokens = [Token]
 
 data Token
@@ -77,7 +80,7 @@ data Token
   | VOIDARGUMENTS
   | NULL
   | YADAYADA
-  | VOIDENT
+  | VOID
   | EOF  -- End of line
   deriving (Show, Read, Eq)
 
@@ -121,3 +124,72 @@ keywords
     , "either"
     , "neither"
     ]
+
+--instance Show Token where
+--  show t = reverseTokens t
+
+
+showt = drawTokens
+
+drawTokens = intercalate " " . map reverseTokens
+
+reverseTokens e
+  = case e of
+      CONST n -> show n
+      CONSTF n -> show n
+      DECLARE -> "var"
+      IDENT n -> n
+      STRING n -> "\"" ++ n ++ "\""
+      CHAR n -> '\'' : n : '\'' : []
+      IMPORT1 -> "import"
+      IMPORT n -> "import " ++ n ++ "\n"
+      RARROW -> "->"
+      LARROW -> "<-"
+      PLUS -> "+"
+      MINUS -> "-"
+      MUL -> "*"
+      DIV -> "/"
+      GRTH -> ">"
+      GRTHEQ -> ">="
+      LSTH -> "<"
+      LSTHEQ -> "<="
+      EQUAL -> "=="
+      NOT -> "/="
+      MOD -> "%"
+      EXP -> "^"
+      AND -> "and"
+      OR -> "or"
+      ASSIGN -> "="
+      WITH -> "with"
+      COMMA -> ","
+      CALLARGS -> "."
+      OPCALLFUNCTION n -> "`" ++ n ++ "`"
+      CALL1 -> "call"
+      CALLALONE n -> "call " ++ n
+      COMMENT -> "//"
+      COUNTLIST -> ".."
+      CONCATLIST -> "++"
+      OPENPAREN -> "("
+      CLOSEPAREN -> ")"
+      OPENLIST -> "["
+      CLOSELIST -> "]"
+      LAMBDA -> "lam"
+      IF -> "if"
+      THEN -> "then"
+      ELSE -> "else"
+      ELSEIF -> "|"
+      ISEITHER -> "either"
+      ISNEITHER -> "neither"
+      FOR -> "for"
+      DO -> "do"
+      IN -> "in"
+      WHEN -> "when"
+      FUNCTION -> "def"
+      TAKE -> "|>"
+      LISTPATTERNMATCHING -> ":"
+      NULLSTRING -> "\"\""
+      VOIDARGUMENTS -> "()"
+      NULL -> "null"
+      YADAYADA -> "..."
+      VOID -> "void"
+      EOF -> ";\n\n"

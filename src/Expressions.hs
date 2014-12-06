@@ -20,6 +20,7 @@ module Expressions where
 
 import Token
 import Ast
+import ErrorHandler
 
 -- A set of all expression's limiters
 eofers
