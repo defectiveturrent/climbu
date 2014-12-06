@@ -133,3 +133,36 @@ And more: ::
    -8
 
 I think it is very cool.
+
+Variables
+---------
+Variables in climbu hasn't to ask you which type has itself. You can declare variables without to say the type. ::
+
+   >>> var y = 7;
+   7
+
+However, you NEED to put its value. And here you are! The compiler knows which type has that variable due to its value.
+
+What can I put in variables?
+++++++++++++++++++++++++++++
+Everything. You can put numbers, strings, lists, lambdas, that is, everything.
+
+   >>> var a = 2 + 8;
+   10
+
+   >>> a = "hello world";
+   "hello world"
+
+   >>> a = 4.005;
+   4.005
+
+   >>> a = [1, 2, 3];
+   [1,2,3]
+
+   >>> var f = lam x y -> x + y
+   lambda
+
+   >>> f 1 2
+   3
+
+Since you declared the variable, you can change its value without using the keyword __var__. You can 
