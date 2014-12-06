@@ -35,6 +35,8 @@ data Ast
   | Equ Ast Ast                        -- Equal AST AST
   | Not Ast Ast                        -- Not equal AST AST
   | Mod Ast Ast                        -- Module AST AST
+  | And Ast Ast                        -- Expressive and
+  | Or Ast Ast                         -- Expressive or
   | Take Ast Ast                       -- list take n
   | Expo Ast Ast                       -- Exponential AST AST
   | Concat Ast Ast                     -- Concat a list

@@ -48,6 +48,8 @@ data Token
   | EXP
   | AND
   | OR
+  | TRUE
+  | FALSE
   | ASSIGN
   | WITH
   | COMMA
@@ -120,6 +122,8 @@ keywords
     , "when"
     , "and"
     , "or"
+    , "true"
+    , "false"
     , "not"
     , "either"
     , "neither"
@@ -159,6 +163,8 @@ reverseTokens e
       EXP -> "^"
       AND -> "and"
       OR -> "or"
+      TRUE -> "true"
+      FALSE -> "false"
       ASSIGN -> "="
       WITH -> "with"
       COMMA -> ","

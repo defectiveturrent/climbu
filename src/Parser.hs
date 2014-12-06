@@ -156,6 +156,8 @@ tokenize (x:xs)   | x `elem` whitespaces      = tokenize xs
                                   "when"   -> WHEN
                                   "and"    -> AND
                                   "or"     -> OR
+                                  "true"   -> TRUE
+                                  "false"  -> FALSE
                                   "not"    -> NOT
                                   "either" -> ISEITHER
                                   "neither" -> ISNEITHER ) : tokenize (d:ds)
@@ -352,6 +354,12 @@ parseFactors (DECLARE:(IDENT x):rest)
 -- Parse idents
 parseFactors ((IDENT x):rest)
   = (Ident x, rest)
+
+parseFactors (TRUE:rest)
+  = (Ident "true", rest)
+
+parseFactors (FALSE:rest)
+  = (Ident "false", rest)
 
 parseFactors ((STRING str):rest)
   = (CharString str, rest)
@@ -673,6 +681,20 @@ parseExp tokens
           in
             astRevision ( Mod factortree subexptree, rest3 )
 
+        (AND : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+
+          in
+            astRevision (And factortree subexptree, rest3)
+
+        (OR : rest2) ->
+          let
+            (subexptree, rest3) = parseHighExp rest2
+
+          in
+            astRevision (Or factortree subexptree, rest3)
+
         (WITH : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
@@ -809,6 +831,9 @@ parseAst (Equ e1 e2) = Operation "==" (parseAst e1) (parseAst e2)
 parseAst (Not e1 e2) = Operation "!=" (parseAst e1) (parseAst e2)
 parseAst (Ge  e1 e2) = Operation ">=" (parseAst e1) (parseAst e2)
 parseAst (Le  e1 e2) = Operation "<=" (parseAst e1) (parseAst e2)
+
+parseAst (And e1 e2) = AndInst (parseAst e1) (parseAst e2)
+parseAst (Or e1 e2) = OrInst (parseAst e1) (parseAst e2)
 
 parseAst (In e1 e2) = Range (parseAst e1) (parseAst e2)
 parseAst (For e1 e2 (When e3))

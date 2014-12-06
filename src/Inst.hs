@@ -29,6 +29,8 @@ data Inst
   | DeclVar String
   | AssignTo Inst Inst
   | Operation String Inst Inst
+  | AndInst Inst Inst
+  | OrInst Inst Inst
   | ForList Inst Inst Inst        -- Result; Ranges; Condition.
   | Range Inst Inst               -- x in list
   | MakeCountList Inst Inst

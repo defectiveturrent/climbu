@@ -36,6 +36,12 @@ using std::tuple;
 
 using namespace std::placeholders;
 
+#define fst(tuple) get<0>(tuple)
+#define snd(tuple) get<1>(tuple)
+
+#define AND(a, b) (a == true? b : false)
+#define OR(a, b) (a == false? b : true)
+
 //
 // Structured definition
 //
@@ -102,6 +108,3 @@ template<class t>
 {
   return a < b ? a : b;
 }
-
-#define fst(tuple) get<0>(tuple)
-#define snd(tuple) get<1>(tuple)

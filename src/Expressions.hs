@@ -32,6 +32,10 @@ eofers
     , IF
     , THEN
     , ELSE
+    , AND
+    , OR
+    , TRUE
+    , FALSE
     , DO
     , FOR
     , IN

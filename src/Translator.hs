@@ -270,6 +270,12 @@ translate stack inst
       TupleInst i ->
         trans $ CallFunction (PushVar "make_tuple") i
 
+      AndInst a b ->
+        "AND(" ++ trans a ++ "," ++ trans b ++")"
+
+      OrInst a b ->
+        "OR(" ++ trans a ++ "," ++ trans b ++")"
+
       Error msg ->
         error msg
 
