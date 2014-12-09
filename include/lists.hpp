@@ -24,18 +24,7 @@
 #include <string>
 #include <cstdint>
 
-using std::cout;
-using std::cin;
-using std::string;
-using std::vector;
-
-//
-// Structured definition
-//
-
-#define List vector
-
-typedef vector<char> String;
+#include "type.h"
 
 String mkstr(const string& str )
 {
@@ -45,9 +34,9 @@ String mkstr(const string& str )
 template< class t,
           class function,
           class condition >
-  auto eachlist( function f, const vector<t>& list, condition d )
+  auto eachlist( function f, const List<t>& list, condition d )
 {
-  vector<decltype(f(list[0]))> res;
+  List<decltype(f(list[0]))> res;
   for ( auto l: list )
   {
     if(d(l))
@@ -57,18 +46,18 @@ template< class t,
   return res;
 }
 
-vector<char> countlist ( char min, char max )
+String countlist ( char min, char max )
 {
-  vector<char> res;
+  String res;
   for ( char i = min; i <= max; ++i )
     res.emplace_back(i);
 
   return res;
 }
 
-vector<int> countlist ( int min, int max )
+List<int> countlist ( int min, int max )
 {
-  vector<int> res;
+  List<int> res;
   for ( int i = min; i <= max; ++i )
     res.emplace_back(i);
 
@@ -77,9 +66,9 @@ vector<int> countlist ( int min, int max )
 
 template<class t>
 
-  vector<t> reverse( const vector<t>& list )
+  List<t> reverse( const List<t>& list )
 {
-  vector<t> res;
+  List<t> res;
   for( int i = list.size() - 1; i >= 0; --i )
   {
     res.emplace_back( list[i] );
@@ -89,36 +78,36 @@ template<class t>
 }
 
 template<class t>
-  t head( const vector<t>& list )
+  t head( const List<t>& list )
 {
   return list[0];
 }
 
 template<class t>
-  t last( const vector<t>& list )
+  t last( const List<t>& list )
 {
   return list[list.size() - 1];
 }
 
 template<class t>
-  vector<t> init( const vector<t>& list )
+  List<t> init( const List<t>& list )
 {
-  vector<t> res = list;
+  List<t> res = list;
   res.pop_back();
   return res;
 }
 
 template<class t>
-  vector<t> tail( const vector<t>& list )
+  List<t> tail( const List<t>& list )
 {
-  vector<t> res = reverse(list);
+  List<t> res = reverse(list);
   res.pop_back();
   res = reverse(res);
   return res;
 }
 
 template<class t>
-  t index( int i, const vector<t>& list )
+  t index( int i, const List<t>& list )
 {
   return list[i];
 }
@@ -132,9 +121,9 @@ string conc( const string& list1, const string& list2 )
 }
 
 template<class t>
-  vector<t> conc( const vector<t>& list1, const vector<t>& list2 )
+  List<t> conc( const List<t>& list1, const List<t>& list2 )
 {
-  vector<t> res = list1;
+  List<t> res = list1;
   for( auto l2: list2 )
   {
     res.emplace_back(l2);
@@ -153,7 +142,7 @@ bool elem( char element, const String & list )
 }
 
 template<class t>
-  bool elem( t element, const vector<t> & list )
+  bool elem( t element, const List<t> & list )
 {
   bool res = false;
   for( auto l: list )
@@ -163,9 +152,9 @@ template<class t>
 }
 
 template<class t>
-  vector<t> takeSince ( const vector<t>& list, int n )
+  List<t> takeSince ( const List<t>& list, int n )
 {
-  vector<t> res;
+  List<t> res;
   for( int i = n; i < list.size(); ++i )
     res.emplace_back( list[i] );
 

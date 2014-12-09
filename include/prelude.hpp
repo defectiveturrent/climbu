@@ -39,36 +39,15 @@ using namespace std::placeholders;
 #define fst(tuple) get<0>(tuple)
 #define snd(tuple) get<1>(tuple)
 
-#define AND(a, b) (a == true? b : false)
-#define OR(a, b) (a == false? b : true)
+#define AND(a, b) (a == false? a : b)
+#define OR(a, b) (a == false? b : a)
 
-//
-// Structured definition
-//
-
-enum SpecialDate_t
-{
-  Undefined, // Represented for undefined stuffs
-  NaN,       // Not a Number
-  Infinite,  // Infinite evaluation
-  NuL,       // Null List
-  NuT,       // Null Tuple
-  NuS,       // Null String
-  Null,      // Null for all
-  Void       // Void space
-};
-
-typedef char Char;
-typedef int Int;
-typedef float Float;
-typedef double Double;
-typedef bool Bool;
-
+#include "type.h"
 #include "lists.hpp"
 #include "system/io.hpp"
 
 template<class t>
-  t sum( const vector<t>& list )
+  t sum( const List<t>& list )
 {
   t res;
   for( auto l: list )
@@ -78,7 +57,7 @@ template<class t>
 }
 
 template<class t>
-  t product( const vector<t>& list )
+  t product( const List<t>& list )
 {
   t res;
   for( auto l: list )
@@ -89,12 +68,18 @@ template<class t>
 
 int length ( char* data )
 {
-  for( int count = 1; ; ++count )
+  for( int count = 0; ; ++count )
   {
     if( data[count] == 0x0 )
       return count;
   }
   return 0;
+}
+
+template<class t>
+  int length( const List<t>& data )
+{
+  return data.size();
 }
 
 template<class t>

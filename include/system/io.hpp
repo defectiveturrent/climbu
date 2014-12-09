@@ -27,10 +27,7 @@
 #include <cstdint>
 #include <tuple>
 
-using std::cout;
-using std::cin;
-using std::string;
-using std::vector;
+#include "../type.h"
 
 //
 // Print functions
@@ -111,7 +108,7 @@ template<class t> SpecialDate_t print ( const t & what )
 }
 
 template<class t>
-   SpecialDate_t print ( const vector<t>& list )
+   SpecialDate_t print ( const List<t>& list )
 {
    putc('[');
    for ( int i = 0; i < list.size(); ++i )
