@@ -314,7 +314,7 @@ tokenRevision (x:rest) = x : tokenRevision rest
 
 parseTokens :: String -> Tokens
 parseTokens
-  = applyTwice tokenRevision . tokenize . stringRevision
+  = tokenRevision . tokenize . stringRevision
 
 applyTwice f = f . f
 
