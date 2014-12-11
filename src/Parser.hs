@@ -422,18 +422,24 @@ parseFactors al@(OPENLIST:CLOSELIST:rest)
 
 parseFactors al@(OPENLIST:rest)
   = let
+      -- Comprehension list
       parseXpr (xpr, COUNTLIST:rest2)
         = let
             (e, CLOSELIST:r) = parseHighExp rest2
           in
             (CountList xpr e, r)
 
+      -- Common list
       parseXpr (xpr, COMMA:rest2)
         = let
             subparse stack (expr, COMMA:xs) = subparse (stack ++ [expr]) (parseHighExp xs)
             subparse stack (expr, CLOSELIST:xs) = (ComprehensionList (stack ++ [expr]), xs)
           in
             subparse [xpr] (parseHighExp rest2)
+
+      -- Just one element
+      parseXpr (xpr, CLOSELIST:rest2)
+        = (ComprehensionList [xpr], rest2)
 
       parseXpr (xpr, r) = report BadList "Lost brackets" (showt al)
     in
@@ -607,7 +613,7 @@ parseExp tokens
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Assign factortree subexptree, checkComma rest3 )
+            astRevision ( Assign factortree subexptree, checkComma rest3 )
 
         (PLUS : rest2) ->
           let
@@ -699,19 +705,19 @@ parseExp tokens
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Call factortree [subexptree], checkComma rest3 )
+            astRevision ( Call factortree [subexptree], checkComma rest3 )
 
         (CALLARGS : rest2) ->
           let
             (subexptree, rest3) = parseAllFactors rest2
           in
-            ( Call factortree subexptree, checkComma rest3 )
+            astRevision ( Call factortree subexptree, checkComma rest3 )
 
         (TAKE : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Take factortree subexptree, rest3 )
+            astRevision ( Take factortree subexptree, rest3 )
 
         (EXP : rest2) ->
           let
@@ -723,82 +729,123 @@ parseExp tokens
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Concat factortree subexptree, rest3 )
+            astRevision ( Concat factortree subexptree, rest3 )
 
         (OPCALLFUNCTION n : rest2) ->
           let
             (subexptree, rest3) = parseHighExp rest2
           in
-            ( Call (Ident n) [factortree, subexptree], checkComma rest3 )
+            astRevision ( Call (Ident n) [factortree, subexptree], checkComma rest3 )
 
         (ISEITHER : rest2) ->
           let
             (subexptree, rest3) = parseEachFactor rest2
 
           in
-            ( IsEither factortree subexptree, rest3 )
+            astRevision ( IsEither factortree subexptree, rest3 )
 
         (ISNEITHER : rest2) ->
           let
             (subexptree, rest3) = parseEachFactor rest2
 
           in
-            ( IsNeither factortree subexptree, rest3 )
+            astRevision ( IsNeither factortree subexptree, rest3 )
 
         (LARROW : rest2) ->
           let
             (subexptree, rest3) = parseFactors rest2
 
           in
-            (Call factortree [Call subexptree []], rest3)
+            astRevision (Call factortree [Call subexptree []], rest3)
 
         -- Like an 'otherwise'
         othertokens ->   -- TODO
-          (factortree, othertokens)
+          astRevision (factortree, othertokens)
 
 
-astRevision (Parens (Parens ast), tokens) = (Parens ast, tokens)
-astRevision (ComprehensionList [CountList pa pb], tokens) = (CountList pa pb, tokens)
+astRevision (Parens (Parens ast), tokens) = concept (Parens ast, tokens)
+astRevision (ComprehensionList [CountList pa pb], tokens) = concept (CountList pa pb, tokens)
 
-astRevision (Mul ta (Add pa pb), tokens) = (Add (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Sub pa pb), tokens) = (Sub (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Div pa pb), tokens) = (Div (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Grt pa pb), tokens) = (Grt (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Ge  pa pb), tokens) = (Ge  (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Let pa pb), tokens) = (Let (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Le  pa pb), tokens) = (Le  (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Equ pa pb), tokens) = (Equ (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Not pa pb), tokens) = (Not (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Mod pa pb), tokens) = (Mod (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Concat pa pb), tokens) = (Concat (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Add pa pb), tokens) = concept (Add (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Sub pa pb), tokens) = concept (Sub (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Div pa pb), tokens) = concept (Div (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Grt pa pb), tokens) = concept (Grt (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Ge  pa pb), tokens) = concept (Ge  (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Let pa pb), tokens) = concept (Let (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Le  pa pb), tokens) = concept (Le  (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Equ pa pb), tokens) = concept (Equ (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Not pa pb), tokens) = concept (Not (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Mod pa pb), tokens) = concept (Mod (Mul ta pa) pb, tokens)
+astRevision (Mul ta (Concat pa pb), tokens) = concept (Concat (Mul ta pa) pb, tokens)
 
-astRevision (Div ta (Add pa pb), tokens) = (Add (Div ta pa) pb, tokens)
-astRevision (Div ta (Sub pa pb), tokens) = (Sub (Div ta pa) pb, tokens)
-astRevision (Div ta (Grt pa pb), tokens) = (Grt (Div ta pa) pb, tokens)
-astRevision (Div ta (Ge  pa pb), tokens) = (Ge  (Div ta pa) pb, tokens)
-astRevision (Div ta (Let pa pb), tokens) = (Let (Div ta pa) pb, tokens)
-astRevision (Div ta (Le  pa pb), tokens) = (Le  (Div ta pa) pb, tokens)
-astRevision (Div ta (Equ pa pb), tokens) = (Equ (Div ta pa) pb, tokens)
-astRevision (Div ta (Not pa pb), tokens) = (Not (Div ta pa) pb, tokens)
-astRevision (Div ta (Mod pa pb), tokens) = (Mod (Div ta pa) pb, tokens)
-astRevision (Div ta (Expo pa pb), tokens) = (Expo (Div ta pa) pb, tokens)
-astRevision (Div ta (Concat pa pb), tokens) = (Concat (Div ta pa) pb, tokens)
+astRevision (Div ta (Add pa pb), tokens) = concept (Add (Div ta pa) pb, tokens)
+astRevision (Div ta (Sub pa pb), tokens) = concept (Sub (Div ta pa) pb, tokens)
+astRevision (Div ta (Grt pa pb), tokens) = concept (Grt (Div ta pa) pb, tokens)
+astRevision (Div ta (Ge  pa pb), tokens) = concept (Ge  (Div ta pa) pb, tokens)
+astRevision (Div ta (Let pa pb), tokens) = concept (Let (Div ta pa) pb, tokens)
+astRevision (Div ta (Le  pa pb), tokens) = concept (Le  (Div ta pa) pb, tokens)
+astRevision (Div ta (Equ pa pb), tokens) = concept (Equ (Div ta pa) pb, tokens)
+astRevision (Div ta (Not pa pb), tokens) = concept (Not (Div ta pa) pb, tokens)
+astRevision (Div ta (Mod pa pb), tokens) = concept (Mod (Div ta pa) pb, tokens)
+astRevision (Div ta (Expo pa pb), tokens) = concept (Expo (Div ta pa) pb, tokens)
+astRevision (Div ta (Concat pa pb), tokens) = concept (Concat (Div ta pa) pb, tokens)
 
-astRevision (Expo ta (Add pa pb), tokens) = (Add (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Sub pa pb), tokens) = (Sub (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Mul pa pb), tokens) = (Mul (Expo pa ta) pb, tokens)
-astRevision (Expo ta (Div pa pb), tokens) = (Div (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Grt pa pb), tokens) = (Grt (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Ge  pa pb), tokens) = (Ge  (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Let pa pb), tokens) = (Let (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Le  pa pb), tokens) = (Le  (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Equ pa pb), tokens) = (Equ (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Not pa pb), tokens) = (Not (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Mod pa pb), tokens) = (Mod (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Concat pa pb), tokens) = (Concat (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Add pa pb), tokens) = concept (Add (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Sub pa pb), tokens) = concept (Sub (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Mul pa pb), tokens) = concept (Mul (Expo pa ta) pb, tokens)
+astRevision (Expo ta (Div pa pb), tokens) = concept (Div (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Grt pa pb), tokens) = concept (Grt (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Ge  pa pb), tokens) = concept (Ge  (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Let pa pb), tokens) = concept (Let (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Le  pa pb), tokens) = concept (Le  (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Equ pa pb), tokens) = concept (Equ (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Not pa pb), tokens) = concept (Not (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Mod pa pb), tokens) = concept (Mod (Expo ta pa) pb, tokens)
+astRevision (Expo ta (Concat pa pb), tokens) = concept (Concat (Expo ta pa) pb, tokens)
 
-astRevision pair = pair
+astRevision pair = concept pair
 
+
+{-----------------------------
+           Concept
+-----------------------------}
+
+
+concept (Add _ (CharString _), _) = report BadMethod "You can't do math between numbers and strings" "n + \"string\""
+concept (Add (CharString _) _, _) = report BadMethod "You can't do math between numbers and strings" "\"string\" + n"
+concept (Sub _ (CharString _), _) = report BadMethod "You can't do math between numbers and strings" "n - \"string\""
+concept (Sub (CharString _) _, _) = report BadMethod "You can't do math between numbers and strings" "\"string\" - n"
+concept (Mul _ (CharString _), _) = report BadMethod "You can't do math between numbers and strings" "n * \"string\""
+concept (Mul (CharString _) _, _) = report BadMethod "You can't do math between numbers and strings" "\"string\" * n"
+concept (Div _ (CharString _), _) = report BadMethod "You can't do math between numbers and strings" "n / \"string\""
+concept (Div (CharString _) _, _) = report BadMethod "You can't do math between numbers and strings" "\"string\" / n"
+
+concept (Add _ (ComprehensionList _), _) = report BadMethod "You can't do math between numbers and strings" "n + []"
+concept (Add (ComprehensionList _) _, _) = report BadMethod "You can't do math between numbers and strings" "[] + n"
+concept (Sub _ (ComprehensionList _), _) = report BadMethod "You can't do math between numbers and strings" "n - []"
+concept (Sub (ComprehensionList _) _, _) = report BadMethod "You can't do math between numbers and strings" "[] - n"
+concept (Mul _ (ComprehensionList _), _) = report BadMethod "You can't do math between numbers and strings" "n * []"
+concept (Mul (ComprehensionList _) _, _) = report BadMethod "You can't do math between numbers and strings" "[] * n"
+concept (Div _ (ComprehensionList _), _) = report BadMethod "You can't do math between numbers and strings" "n / []"
+concept (Div (ComprehensionList _) _, _) = report BadMethod "You can't do math between numbers and strings" "[] / n"
+
+concept (Concat a (Num _), _) = report BadMethod "You can just concat lists" "[] ++ n"
+concept (Concat a (Numf _), _) = report BadMethod "You can just concat lists" "[] ++ n"
+concept (Concat (Num _) b, _) = report BadMethod "You can just concat lists" "n ++ []"
+concept (Concat (Numf _) b, _) = report BadMethod "You can just concat lists" "n ++ []"
+
+concept (Assign a b, tokens)
+  = case a of
+      Num x ->
+        report BadMethod "You can't assign values to numbers" (show x ++ " = ...")
+
+      Numf x ->
+        report BadMethod "You can't assign values to numbers" (show x ++ " = ...")
+
+      _ ->
+        (Assign a b, tokens)
+
+concept ast = ast
 
 {-----------------------------
    Ast to Instruction Parser

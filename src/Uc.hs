@@ -80,7 +80,7 @@ compile (executable:pathsource:_)
 
 interpret (lines:_)
   = let
-      generatedCode = Cpp.genCode $ "def main = println . " ++ lines
+      generatedCode = Cpp.genCode $ "main() = println . " ++ lines ++ ";"
 
     in do
         case generatedCode of
@@ -97,7 +97,7 @@ interpret (lines:_)
 
 version _
   = do
-      putStrLn "Climbu compiler v1.4 (Is this real world?) - Copyright (C) 2014  Mario Feroldi"
+      putStrLn "Climbu compiler v1.5 (Let's play with math) - Copyright (C) 2014  Mario Feroldi"
       putStrLn "This program comes with ABSOLUTELY NO WARRANTY."
       putStrLn "This is free software, and you are welcome to redistribute it"
       putStrLn "under GPL v3 license.\n"
