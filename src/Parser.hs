@@ -413,6 +413,21 @@ parseFactors al@(OPENPAREN:rest)
           in
             subparse [xpr] (parseHighExp rest2)
 
+      parseXpr (xpr, FOR:IDENT n:IN:rest2)
+        = let
+            subparse (list, WHEN:r2)
+              = let
+                  (condition, CLOSEPAREN:r3) = parseHighExp r2
+                in
+                  (For xpr (In (Ident n) list) (When condition), r3)
+
+            subparse (list, CLOSEPAREN:r2)
+              = (For xpr (In (Ident n) list) (When Void), r2)
+
+            subparse (wrong, r) = report BadMethod "Bad for" (showt r)
+          in
+            subparse (parseHighExp rest2)
+
       parseXpr (xpr, r) = report BadMethod "Lost parentheses" (showt al)
     in
       astRevision . parseXpr . parseHighExp $ rest
@@ -479,12 +494,12 @@ parseFactors ((ELSE):rest)
     in
       (Else stat, rest2)
 
-parseFactors ((WHEN):rest)
+{-parseFactors ((WHEN):rest)
   = let
       (stat, rest2) = parseHighExp rest
 
     in
-      (When stat, rest2)
+      (When stat, rest2) -}
 
 -- Parse end of
 parseFactors ((EOF):rest)
@@ -589,7 +604,7 @@ parseExp tokens
 
     in
      astRevision $ case rest of
-        (FOR : rest2) ->
+       {-(FOR : rest2) ->
           let
             (varin, IN:rest3) = parseFactors rest2
             (content, rest4) = parseFactors rest3
@@ -607,7 +622,7 @@ parseExp tokens
               = (When Void, tokens)
 
           in
-            (For factortree counter whenStat, finalRest)
+            (For factortree counter whenStat, finalRest) -}
 
         (ASSIGN : rest2) ->
           let

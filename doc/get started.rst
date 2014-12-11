@@ -150,19 +150,18 @@ Everything. You can put numbers, strings, lists, lambdas, that is, everything.
    >>> var a = 2 + 8;
    10
 
-   >>> a = "hello world";
-   "hello world"
+   >>> var b = "Hello World";
+   "Hello World"
 
    >>> a = 4.005;
    4.005
 
-   >>> a = [1, 2, 3];
+   >>> var list = [1, 2, 3];
    [1,2,3]
 
    >>> var f = lam x y -> x + y
-   lambda
 
    >>> f 1 2
    3
 
-Since you declared the variable, you can change its value without using the keyword ``var``. You can also change their values with no cares about its type. 
+Since you declared the variable, you can change its value without using the keyword ``var``. Since variables are defined, you can't change its type.
