@@ -160,7 +160,7 @@ Everything. You can put numbers, strings, lists, lambdas, that is, everything.
    >>> var list = [1, 2, 3];
    [1,2,3]
 
-   >>> var f = lam x y -> x + y
+   >>> var f = ~x y -> x + y
 
    >>> f 1 2
    3

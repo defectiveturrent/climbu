@@ -6,3 +6,4 @@ Climbu Documentation
 
    introduction
    get started
+   More operations
