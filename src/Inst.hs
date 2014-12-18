@@ -21,21 +21,21 @@ module Inst where
 type Insts = [Inst]
 
 data Inst
-  = PushVar String
-  | PushConst String
-  | PushConstf String
-  | PushChar Char
-  | PushString String
-  | DeclVar String
-  | AssignTo Inst Inst
-  | Operation String Inst Inst
-  | AndInst Inst Inst
-  | OrInst Inst Inst
+  = PushVar String                --
+  | PushConst String              --
+  | PushConstf String             --
+  | PushChar Char                 --
+  | PushString String             --
+  | DeclVar String                --
+  | AssignTo Inst Inst            --
+  | Operation String Inst Inst    --
+  | AndInst Inst Inst             --
+  | OrInst Inst Inst              --
   | ForList Inst Inst Inst        -- Result; Ranges; Condition.
   | Range Inst Inst               -- x in list
-  | MakeCountList Inst Inst
-  | MakeSimpleList [Inst]
-  | Block Inst
+  | MakeCountList Inst Inst       --
+  | MakeSimpleList [Inst]         --
+  | Block Inst                    --
   | MakeCondition Inst Inst Inst  -- Cond Then Else
   | Function Inst [Inst] Inst     -- auto foo = [](auto a, auto b){ return a + b; }
   | Lambda [Inst] Inst            -- [](auto a, auto b){ }
@@ -48,6 +48,8 @@ data Inst
   | ImportInst String             --
   | NegateInst Inst               --
   | TNothing                      -- For empty places
-  | Ignore                        -- _
+  | Ignore                        -- underline (_)
+  | TryInst Inst                  --
+  | MatchInst Inst [Inst] Inst    --
   | Error String                  -- For format errors
   deriving (Show, Read, Eq)

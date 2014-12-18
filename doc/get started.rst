@@ -8,7 +8,7 @@ How to use
 ++++++++++
 To use the Climbu compilder is easy, just type on a terminal the following command: ::
 
-   climbu -c bin file.cl
+   climbu -c bin file.bu
 
 And to interpret a line, just type: ::
 
@@ -146,6 +146,7 @@ However, you NEED to put its value. And here you are! The compiler knows which t
 What can I put in variables?
 ++++++++++++++++++++++++++++
 Everything. You can put numbers, strings, lists, lambdas, that is, everything.
+::
 
    >>> var a = 2 + 8;
    10
@@ -165,3 +166,17 @@ Everything. You can put numbers, strings, lists, lambdas, that is, everything.
    3
 
 Since you declared the variable, you can change its value without using the keyword ``var``. Since variables are defined, you can't change its type.
+
+So, can we do this?
+::
+
+   >>> var hello = hello;
+   climbu: BadMethod: I just met this variable, nor asked about its type
+      at: var hello = hello
+
+No, we can't. How I said, Climbu needs know its type. If you don't tell it, the compiler can't guess it.
+
+Some conclusions
+++++++++++++++++
+
+Yeah, we have stuffs that are in other languages. I think it is the basic that Climbu has to have.

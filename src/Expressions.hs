@@ -18,6 +18,7 @@
 
 module Expressions where
 
+import Data.List
 import Token
 import Ast
 import ErrorHandler
@@ -25,10 +26,11 @@ import ErrorHandler
 -- A set of all expression's limiters
 eofers
   = [ CLOSEPAREN
-    , CLOSELIST
     , RARROW
     , LARROW
-    -- , VAR -- I don't know the reason, but it's crashing the do-in expression
+    , CLOSELIST
+    , DECLARE -- I don't know the reason, but it's crashing the do-in expression
+    , COUNTLIST
     , IF
     , THEN
     , ELSE
@@ -44,8 +46,6 @@ eofers
     , COMMA
     , COMMENT
     , LISTPATTERNMATCHING
-    , COUNTLIST
-    , EOF
     , PLUS
     , MINUS
     , MUL
@@ -64,4 +64,130 @@ eofers
     , ISNEITHER
     , CONCATLIST
     , YADAYADA
+    , TRY
+    , MATCH
+    , WITH
+    , SO
+    , EXCLAMATION
+    , EOF
     ]
+
+
+-- All possibles white spaces
+whitespaces
+  = [ ' ' , '\t' , '\r' , '\n' ]
+ 
+-- All digits
+digits
+  = ['0'..'9'] ++ ['.']
+ 
+-- All identifiers
+identifiers
+  = filter (/='.') $ ['a'..'z'] ++ ['A'..'Z'] ++ ['_'] ++ digits
+ 
+-- All operators
+operators
+  = ['+', '-', '*', '/', '^', '=', '%', '>', '<', ':', '.', ',', '|']
+
+singleOperators
+  = ['(', ')', '[', ']', '!']
+
+-- All keywords
+keywords
+  = [ "var"
+    , "def"
+    , "lam"
+    , "if"
+    , "then"
+    , "else"
+    , "for"
+    , "in"
+    , "do"
+    , "null"
+    , "call"
+    , "import"
+    , "when"
+    , "and"
+    , "or"
+    , "true"
+    , "false"
+    , "not"
+    , "either"
+    , "neither"
+    , "try"
+    , "match"
+    , "with"
+    , "so"
+    ]
+
+
+showt = drawTokens
+
+drawTokens = intercalate " " . map reverseTokens
+
+reverseTokens e
+  = case e of
+      CONST n -> show n
+      CONSTF n -> show n
+      DECLARE -> "var"
+      IDENT n -> n
+      STRING n -> "\"" ++ n ++ "\""
+      CHAR n -> '\'' : n : '\'' : []
+      IMPORT1 -> "import"
+      IMPORT n -> "import " ++ n ++ "\n"
+      RARROW -> "->"
+      LARROW -> "<-"
+      PLUS -> "+"
+      MINUS -> "-"
+      MUL -> "*"
+      DIV -> "/"
+      GRTH -> ">"
+      GRTHEQ -> ">="
+      LSTH -> "<"
+      LSTHEQ -> "<="
+      EQUAL -> "=="
+      NOT -> "/="
+      MOD -> "%"
+      EXP -> "^"
+      AND -> "and"
+      OR -> "or"
+      TRUE -> "true"
+      FALSE -> "false"
+      ASSIGN -> "="
+      MATCH -> "match"
+      WITH -> "with"
+      SO -> "so"
+      COMMA -> ","
+      CALLARGS -> "."
+      OPCALLFUNCTION n -> "`" ++ n ++ "`"
+      CALL1 -> "call"
+      CALLALONE n -> "call " ++ n
+      COMMENT -> "//"
+      COUNTLIST -> ".."
+      CONCATLIST -> "++"
+      OPENPAREN -> "("
+      CLOSEPAREN -> ")"
+      OPENLIST -> "["
+      CLOSELIST -> "]"
+      LAMBDA -> "lam"
+      IF -> "if"
+      THEN -> "then"
+      ELSE -> "else"
+      ELSEIF -> "|"
+      ISEITHER -> "either"
+      ISNEITHER -> "neither"
+      FOR -> "for"
+      DO -> "do"
+      IN -> "in"
+      WHEN -> "when"
+      FUNCTION -> "def"
+      TAKE -> "|>"
+      LISTPATTERNMATCHING -> ":"
+      NULLSTRING -> "\"\""
+      VOIDARGUMENTS -> "()"
+      NULL -> "null"
+      YADAYADA -> "..."
+      TRY -> "try"
+      EXCLAMATION -> "!"
+      VOID -> "void"
+      EOF -> ";\n\n"

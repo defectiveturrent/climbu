@@ -63,6 +63,8 @@ data Ast
   | Import String                      -- To import a library
   | ListPM [Ast] Ast                   -- A list's pattern matching operator (:) ( [Head] Tail )
   | Negate Ast                         --
+  | Try Ast                            --
+  | MatchWith Ast [Ast] Ast            -- match Stat with [Stats] otherwise-stat
   | Special SpecialDate                --
   | Void                               -- Used to stuff something empty
   | Eof                                -- used to end a complete expression

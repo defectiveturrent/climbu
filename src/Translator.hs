@@ -75,7 +75,7 @@ execute stack
                             then
                               string
                             else
-                              string ++ ";") oc
+                              string ++ ";" {-Lambda-}) oc
 
         Left msg
           -> Left msg
@@ -85,11 +85,22 @@ genCode stack
   = case (execute $ parseTokens stack) of
       Right clines
         -> Right $ "#include \"include/prelude.hpp\"\n"
+                    ++ "\n"
+                    ++ "int argc = 0;\n"
+                    ++ "char** argv;\n\n"
                     ++ intercalate "\n" clines
                     ++ "\n\n"
-                    ++ "int main( int countArgs, char** args )\n"
+                    ++ "int main( int _argc, char** _argv )\n"
                     ++ "{\n"
-                    ++ "  return _main(), 0;\n"
+                    ++ "   argc = _argc;\n"
+                    ++ "   argv = _argv;\n"
+                    ++ "   try {\n"
+                    ++ "     _main();\n"
+                    ++ "   } catch( const ClimbuException& e ) {\n"
+                    ++ "     std::cout << e.what() << std::endl << std::endl;\n"
+                    ++ "     return 1;\n"
+                    ++ "   }\n"
+                    ++ "   return 0;\n"
                     ++ "}"
 
       Left msg
@@ -276,6 +287,9 @@ translate stack inst
       OrInst a b ->
         "OR(" ++ trans a ++ "," ++ trans b ++")"
 
+      TryInst x ->
+        "try{" ++ trans x ++ ";}catch(const ClimbuException & e){std::cout << e.what() << std::endl; abort();};"
+
       Error msg ->
         error msg
 
@@ -340,6 +354,7 @@ defnCallFun
     , ("product", IntLabel)
     , ("elem", BoolLabel)
     , ("getLine", List CharLabel)
+    , ("sqrt", DoubleLabel)
     , ("Char", CharLabel)
     , ("Int", IntLabel)
     , ("Float", FloatLabel)
@@ -457,6 +472,8 @@ getLabel expr
             BoolLabel
           "!=" ->
             BoolLabel
+          "%" ->
+            IntLabel
           "/" ->
             FloatLabel
           _ ->
@@ -472,6 +489,9 @@ getLabel expr
                 else alabel
 
       Block x ->
+        getLabel x
+
+      TryInst x ->
         getLabel x
 
       _ ->

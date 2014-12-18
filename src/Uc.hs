@@ -80,7 +80,7 @@ compile (executable:pathsource:_)
 
 interpret (lines:_)
   = let
-      generatedCode = Cpp.genCode $ "main() = println . " ++ lines ++ ";"
+      generatedCode = Cpp.genCode $ "main() = println (" ++ lines ++ ");"
 
     in do
         case generatedCode of
@@ -97,17 +97,25 @@ interpret (lines:_)
 
 version _
   = do
-      putStrLn "Climbu compiler v1.5 (Let's play with math) - Copyright (C) 2014  Mario Feroldi"
+      putStrLn "Climbu compiler v1.6 (I was reborn!) - Copyright (C) 2014  Mario Feroldi"
       putStrLn "This program comes with ABSOLUTELY NO WARRANTY."
       putStrLn "This is free software, and you are welcome to redistribute it"
       putStrLn "under GPL v3 license.\n"
+
+help ("-c":_)
+  = do
+      putStrLn "COMPILE <binary name> <source/file>"
+      putStrLn "\n   This command compiles a source or file to an executable binary file."
+      putStrLn "\n     For example:"
+      putStrLn "        climbu -c test source.cm"
+      putStrLn "\n To see more, type --help."
 
 help _
   = do
       putStrLn "Usage: climbu [option] file...\n"
       putStrLn "  -c <bin name> <file>           Compiles a Climbu code"
       putStrLn "  -i <line>                      Interprets a line"
-      putStrLn "  {-v --version}                 Show version"
-      putStrLn "  {-h --help}                    Show help"
+      putStrLn "  {-v --version}                 Shows version"
+      putStrLn "  {-h --help}                    Shows help"
       putStrLn []
       putStrLn "Report bugs to <blueoatstudio@gmail.com>"
