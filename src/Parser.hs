@@ -157,7 +157,6 @@ tokenize (x:xs) | x `elem` whitespaces      = tokenize xs
                               case stack of
                                 "var"     -> DECLARE
                                 "def"     -> FUNCTION
-                                "lam"     -> LAMBDA
                                 "if"      -> IF
                                 "then"    -> THEN
                                 "else"    -> ELSE
@@ -186,7 +185,8 @@ tokenize (x:xs) | x `elem` whitespaces      = tokenize xs
                         ")" -> CLOSEPAREN
                         "[" -> OPENLIST
                         "]" -> CLOSELIST
-                        "!" -> EXCLAMATION) : tokenize ds
+                        "!" -> EXCLAMATION
+                        "~" -> LAMBDA) : tokenize ds
 
                   doOperator stack (d:ds)
                     = if d `elem` operators
@@ -195,27 +195,27 @@ tokenize (x:xs) | x `elem` whitespaces      = tokenize xs
                         
                         else
                           (case stack of
-                            "+" -> PLUS
-                            "-" -> MINUS
-                            "*" -> MUL
-                            "/" -> DIV
-                            "=" -> ASSIGN
-                            "==" -> EQUAL
-                            "/=" -> NOT
-                            "%" -> MOD
-                            ">" -> GRTH
-                            ">=" -> GRTHEQ
-                            "<" -> LSTH
-                            "<=" -> LSTHEQ
-                            "^" -> EXP
-                            "->" -> RARROW
-                            "<-" -> LARROW
-                            ":" -> LISTPATTERNMATCHING
-                            "|" -> ELSEIF
-                            "." -> CALLARGS
-                            "," -> COMMA
-                            "++" -> CONCATLIST
-                            ".." -> COUNTLIST
+                            "+"   -> PLUS
+                            "-"   -> MINUS
+                            "*"   -> MUL
+                            "/"   -> DIV
+                            "="   -> ASSIGN
+                            "=="  -> EQUAL
+                            "/="  -> NOT
+                            "%"   -> MOD
+                            ">"   -> GRTH
+                            ">="  -> GRTHEQ
+                            "<"   -> LSTH
+                            "<="  -> LSTHEQ
+                            "^"   -> EXP
+                            "->"  -> RARROW
+                            "<-"  -> LARROW
+                            ":"   -> LISTPATTERNMATCHING
+                            "|"   -> ELSEIF
+                            "."   -> COMPOSITION
+                            ","   -> COMMA
+                            "++"  -> CONCATLIST
+                            ".."  -> COUNTLIST
                             "..." -> YADAYADA) : tokenize (d:ds)
 
 tokenAdjustments :: Tokens -> Tokens
@@ -501,10 +501,6 @@ parseAllFactors tokens'
      in
       parsef' ([], tokens')
 
-checkComma :: Tokens -> Tokens
-checkComma tokens
-  = (if (not $ null tokens) && (head tokens == COMMA) then tail else id) tokens
-
 parseEachFactor :: Tokens -> (Asts, Tokens)
 parseEachFactor tokens'
   = let
@@ -636,7 +632,7 @@ parseExp tokens
           let
             (subexptree, rest3) = parseSuperExp rest2
           in
-            astRevision ( Assign factortree subexptree, checkComma rest3 )
+            astRevision ( Assign factortree subexptree, rest3 )
 
         (PLUS : rest2) ->
           let
@@ -666,7 +662,7 @@ parseExp tokens
 
                             _ ->
                               Div factortree subexptree
-                        ), checkComma rest3 )
+                        ),  rest3 )
 
         (GRTH : rest2) ->
           let
@@ -724,11 +720,11 @@ parseExp tokens
           in
             astRevision (Or factortree subexptree, rest3)
 
-        (CALLARGS : rest2) ->
+        (COMPOSITION : rest2) ->
           let
             (subexptree, rest3) = parseSuperExp rest2
           in
-            astRevision ( Call factortree [subexptree], checkComma rest3 )
+            astRevision ( Call factortree [subexptree],  rest3 )
 
         (TAKE : rest2) ->
           let
@@ -752,7 +748,7 @@ parseExp tokens
           let
             (subexptree, rest3) = parseSuperExp rest2
           in
-            astRevision ( Call (Ident n) [factortree, subexptree], checkComma rest3 )
+            astRevision ( Call (Ident n) [factortree, subexptree],  rest3 )
 
         (ISEITHER : rest2) ->
           let

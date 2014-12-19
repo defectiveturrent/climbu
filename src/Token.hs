@@ -56,7 +56,7 @@ data Token
   | SO
   | COMMA
   | EXCLAMATION
-  | CALLARGS
+  | COMPOSITION
   | OPCALLFUNCTION String
   | CALL1
   | CALLALONE String

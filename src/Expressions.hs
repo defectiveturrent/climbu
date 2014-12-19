@@ -42,7 +42,7 @@ eofers
     , FOR
     , IN
     , WHEN
-    , CALLARGS
+    , COMPOSITION
     , COMMA
     , COMMENT
     , LISTPATTERNMATCHING
@@ -72,7 +72,6 @@ eofers
     , EOF
     ]
 
-
 -- All possibles white spaces
 whitespaces
   = [ ' ' , '\t' , '\r' , '\n' ]
@@ -83,20 +82,19 @@ digits
  
 -- All identifiers
 identifiers
-  = filter (/='.') $ ['a'..'z'] ++ ['A'..'Z'] ++ ['_'] ++ digits
+  = (['a'..'z'] ++ ['A'..'Z'] ++ ['_'] ++ digits) \\ ['.']
  
 -- All operators
 operators
   = ['+', '-', '*', '/', '^', '=', '%', '>', '<', ':', '.', ',', '|']
 
 singleOperators
-  = ['(', ')', '[', ']', '!']
+  = ['(', ')', '[', ']', '!', '~']
 
 -- All keywords
 keywords
   = [ "var"
     , "def"
-    , "lam"
     , "if"
     , "then"
     , "else"
@@ -158,7 +156,7 @@ reverseTokens e
       WITH -> "with"
       SO -> "so"
       COMMA -> ","
-      CALLARGS -> "."
+      COMPOSITION -> "."
       OPCALLFUNCTION n -> "`" ++ n ++ "`"
       CALL1 -> "call"
       CALLALONE n -> "call " ++ n
@@ -169,7 +167,7 @@ reverseTokens e
       CLOSEPAREN -> ")"
       OPENLIST -> "["
       CLOSELIST -> "]"
-      LAMBDA -> "lam"
+      LAMBDA -> "~"
       IF -> "if"
       THEN -> "then"
       ELSE -> "else"
