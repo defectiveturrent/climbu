@@ -28,7 +28,7 @@ v1.4
 + Remade the parentheses and lists parser.
 + Remade the tokens parser.
 + Remade tuple parser.
-+ Renamed 'let-in' to 'do-in'.
++ Renamed ``let in`` to ``do in``.
 + Added new way to define functions.
 + Added mathematic syntax to numbers and variables.
 
