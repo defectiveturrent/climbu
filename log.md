@@ -3,7 +3,7 @@ Log
 
 v1.6.1
 ------
-+ Now lambdas are defined using the ~ prefix;
++ Now lambdas are defined using the ``~`` prefix;
 + Fixed Bad functions' declaration;
 + Fixed the function type return;
 + Fixed other bugs;
