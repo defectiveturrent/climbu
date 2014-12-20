@@ -32,6 +32,10 @@ v1.4
 + Added new way to define functions.
 + Added mathematic syntax to numbers and variables.
 
+Not compiled yet
+----------------
++ The ``as`` keyword for casting;
+
 In working
 -----------
 + Partial application;
