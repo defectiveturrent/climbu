@@ -93,3 +93,21 @@ template<class t>
 {
   return a < b ? a : b;
 }
+
+template<class t1, class t2>
+  t1 cast(const List<t2> & vec)
+{
+  t1 r;
+  for( t2 element : vec )
+  {
+    r.emplace_back( element );
+  }
+
+  return r;
+}
+
+template<class t1, class t2>
+  t1 cast(t2 expression)
+{
+  return (t1) expression;
+}

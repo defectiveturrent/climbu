@@ -292,7 +292,10 @@ translate stack inst
         "OR(" ++ trans a ++ "," ++ trans b ++")"
 
       TryInst x ->
-        "try{" ++ trans x ++ ";}catch(const ClimbuException & e){std::cout << e.what() << std::endl; abort();};"
+        "try{" ++ trans x ++ ";}catch(const ClimbuException & e){std::cout << e.what() << std::endl; abort();}"
+
+      Cast a t ->
+        "cast<" ++ t ++ ">(" ++ trans a ++ ")"
 
       Error msg ->
         error msg
@@ -504,6 +507,9 @@ getLabel expr
 
       TryInst x ->
         getLabel x
+
+      Cast _ x ->
+        Custom x
 
       _ ->
         UnknownLabel

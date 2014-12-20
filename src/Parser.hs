@@ -778,7 +778,7 @@ genericParseExp f tokens
 
         (AS : rest2) ->
           let
-            (subexptree@(Ident n), rest3) = parseFactors rest2
+            (subexptree, rest3) = parseFactors rest2
 
           in
             astRevision (AsCast factortree subexptree, rest3)
@@ -946,4 +946,6 @@ parseAst (ListPM e1 e2) = ListPMInst (map parseAst e1) (parseAst e2)
 parseAst (Special x) = PushVar $ show x
 parseAst (Try x) = TryInst $ parseAst x
 parseAst (MatchWith a b c) = MatchInst (parseAst a) (map parseAst b) (parseAst c)
+parseAst (AsCast a (Ident t)) = Cast (parseAst a) t
+parseAst (AsCast a (ComprehensionList [Ident t])) = Cast (parseAst a) ("List<" ++ t ++ ">")
 parseAst _ = TNothing

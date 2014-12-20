@@ -31,3 +31,25 @@ template<class T>
   using List = vector<T>;
 
 using String = List<char>;
+
+class ClimbuException : public std::exception
+{
+protected:
+    string message;
+
+public:
+    ClimbuException(const string & msg)
+        : std::exception(), message(msg)
+    { }
+
+    ClimbuException(const String & msg)
+        : std::exception()
+    {
+        message = string(msg.begin(), msg.end());
+    }
+
+    const char* what() const noexcept
+    {
+        return message.data();
+    }
+};

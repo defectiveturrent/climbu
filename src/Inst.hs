@@ -51,5 +51,6 @@ data Inst
   | Ignore                        -- underline (_)
   | TryInst Inst                  --
   | MatchInst Inst [Inst] Inst    --
+  | Cast Inst String              --
   | Error String                  -- For format errors
   deriving (Show, Read, Eq)
