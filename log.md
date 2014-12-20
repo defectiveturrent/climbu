@@ -36,8 +36,6 @@ In working
 -----------
 + Partial application;
 + Removing the strings concatenation's bug;
-
 + Some ideas from mathematic. Using math in lists (matrix).
 + Concatenation between lists and primitive types.
-+ 
 + Byte-code Interpreter in C++.

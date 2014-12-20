@@ -113,11 +113,6 @@ No one has ever seen anything like this (I presume): ::
    >>> 2x
    4
 
-Yeap. Climbu has the mathematic-multiplication-like operation. You can suffix a variable onto a number and will multiply. You can also put parentheses to multiply: ::
-
-   >>> (7 - 2)(4 + 2)
-   30
-
 And more: ::
 
    >>> var x = 2;
@@ -154,7 +149,7 @@ Everything. You can put numbers, strings, lists, lambdas, that is, everything.
    >>> var b = "Hello World";
    "Hello World"
 
-   >>> a = 4.005;
+   >>> var myVar = 4.005;
    4.005
 
    >>> var list = [1, 2, 3];
