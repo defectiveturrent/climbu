@@ -65,6 +65,7 @@ data Ast
   | Negate Ast                         --
   | Try Ast                            --
   | MatchWith Ast [Ast] Ast            -- match Stat with [Stats] otherwise-stat
+  | AsCast Ast Ast                     --
   | Special SpecialDate                --
   | Void                               -- Used to stuff something empty
   | Eof                                -- used to end a complete expression

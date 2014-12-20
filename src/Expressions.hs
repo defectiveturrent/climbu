@@ -69,6 +69,7 @@ eofers
     , WITH
     , SO
     , EXCLAMATION
+    , AS
     , EOF
     ]
 
@@ -116,6 +117,7 @@ keywords
     , "match"
     , "with"
     , "so"
+    , "as"
     ]
 
 
@@ -187,5 +189,6 @@ reverseTokens e
       YADAYADA -> "..."
       TRY -> "try"
       EXCLAMATION -> "!"
+      AS -> "as"
       VOID -> "void"
       EOF -> ";\n\n"

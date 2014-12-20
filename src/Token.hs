@@ -54,6 +54,7 @@ data Token
   | MATCH
   | WITH
   | SO
+  | AS
   | COMMA
   | EXCLAMATION
   | COMPOSITION

@@ -162,6 +162,7 @@ translate stack inst
   = let
       trans = translate stack
       getLabelString = show . searchLabel stack
+      getLabelString1 s = show . searchLabel s
 
     in
     case inst of
@@ -250,15 +251,18 @@ translate stack inst
           strname = trans name
           checkName = if strname == "main" then "_main" else strname
 
+          -- Sets local variables' types
+          localVars'stack = giveCustomTypes args ++ stack
+
           --line = trans $ AssignTo (PushVar checkName) (Lambda args body)
           line
             =  genGenericPrefix (if args /= [TNothing] then length args else 0)
-            ++ getLabelString body
+            ++ getLabelString1 localVars'stack body
             ++ " "
             ++ checkName
-            ++ genGenericArguments stack args
+            ++ genGenericArguments localVars'stack args
             ++ "{ return "
-            ++ (trans body)
+            ++ (translate localVars'stack body)
             ++ "; }"
         in
           line
@@ -331,6 +335,11 @@ genGenericArguments stack args
     in
       completeArguments
 
+giveCustomTypes :: Insts -> [(String, Label)]
+giveCustomTypes args
+  = map
+    (\(PushVar x, n) -> (x, Custom $ "t" ++ show n)) $ zip args [1..]
+
 defnConsts
   = [ ("true", BoolLabel)
     , ("false", BoolLabel)
@@ -378,6 +387,7 @@ data Label
   | BoolLabel
   | List Label
   | SpecialLabel
+  | Custom String
   | UnknownLabel
   deriving(Eq, Read)
 
@@ -392,6 +402,7 @@ instance Show Label
     show (List UnknownLabel) = "auto"
     show (List label) = "List<" ++ show label ++ ">"
     show SpecialLabel = "SpecialDate_t"
+    show (Custom xs) = xs
     show UnknownLabel = "auto"
 
 getLabel :: Inst -> Label

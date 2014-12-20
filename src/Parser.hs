@@ -177,7 +177,8 @@ tokenize (x:xs) | x `elem` whitespaces      = tokenize xs
                                 "try"     -> TRY
                                 "match"   -> MATCH
                                 "with"    -> WITH
-                                "so"      -> SO ) : tokenize (d:ds)
+                                "so"      -> SO
+                                "as"      -> AS ) : tokenize (d:ds)
                   
                   doSingleOperator stack ds
                     = (case stack of
@@ -488,7 +489,7 @@ parseAllFactors tokens'
   = let
       parsef' (ast, tokens)
         = let
-            (nast, rest) = parseHighExp tokens
+            (nast, rest) = genericParseExp parseFactors tokens
 
             nextToken = if null rest then VOID else head rest
           in
@@ -570,7 +571,7 @@ parseHighExp tokens@( prefixToken : restTokens )
           (stat : rest) = restTokens -- Separates tokens in prefix, stat and rest
 
           functionIdent = parseFactor stat
-          arguments = fst . parseAllFactors . takeWhile (/=ASSIGN) $ rest
+          arguments =  (\xs -> if null xs then [] else fst $ parseAllFactors xs) $ takeWhile (/=ASSIGN) rest
           (bodyFunction, rest2) = parseSuperExp . tail . dropWhile (/=ASSIGN) $ rest -- Remove Assign from head (tail)
             
         in
@@ -620,11 +621,15 @@ parseHighExp tokens@( prefixToken : restTokens )
       othertokens ->
         parseExp tokens
 
+
 parseExp :: [Token] -> (Ast, [Token])
-parseExp [] = (Eof, [])
-parseExp tokens
+parseExp = genericParseExp (genericParseSuperExp parseFactors)
+
+genericParseExp :: (Tokens -> (Ast, Tokens)) -> Tokens -> (Ast, Tokens)
+genericparseExp [] = (Eof, [])
+genericParseExp f tokens
   = let
-      (factortree, rest) = genericParseSuperExp parseFactors tokens
+      (factortree, rest) = f tokens -- FIX this shit!!!
 
     in
      astRevision $ case rest of
@@ -770,6 +775,13 @@ parseExp tokens
 
           in
             astRevision (Call factortree [Call subexptree []], rest3)
+
+        (AS : rest2) ->
+          let
+            (subexptree@(Ident n), rest3) = parseFactors rest2
+
+          in
+            astRevision (AsCast factortree subexptree, rest3)
 
         -- Like an 'otherwise'
         othertokens ->   -- TODO
