@@ -14,7 +14,7 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
--} 
+-}
 
 module Translator where
 
@@ -121,7 +121,7 @@ searchLabel stack (CallFunction (PushVar "countlist") [a, b])
           [a, b]
     in
       case l of
-        UnknownLabel -> SpecialLabel
+        UnknownLabel -> Custom ""
         _ -> List l
 
 searchLabel stack (CallFunction (PushVar name) args)
@@ -151,7 +151,7 @@ searchLabel stack (MakeSimpleList list)
           list
     in
       case l of
-        UnknownLabel -> SpecialLabel
+        UnknownLabel -> Custom "auto"
         _ -> List l
 
 searchLabel _ inst
@@ -236,8 +236,11 @@ translate stack inst
       MakeCountList a b ->
         trans $ CallFunction (PushVar "countlist") [a, b]
 
+      Cast (MakeSimpleList content) t ->
+        t ++ "{" ++ (intercalate "," $ map trans content) ++ "}"
+
       msl @ (MakeSimpleList content) ->
-        getLabelString msl ++ "({" ++ (intercalate "," $ map trans content) ++ "})"
+        getLabelString msl ++ "{" ++ (intercalate "," $ map trans content) ++ "}"
 
       Block i ->
         "(" ++ (trans i) ++ ")"
@@ -256,7 +259,7 @@ translate stack inst
 
           --line = trans $ AssignTo (PushVar checkName) (Lambda args body)
           line
-            =  genGenericPrefix (if args /= [TNothing] then length args else 0)
+            =  genGenericPrefix (if args /= [TNothing] then length args else 0) args
             ++ getLabelString1 localVars'stack body
             ++ " "
             ++ checkName
@@ -301,11 +304,11 @@ translate stack inst
         error msg
 
 
-genGenericPrefix n
+genGenericPrefix n args
   = let
       prefix = "template<"
       suffix = "> "
-      classes = map (\number -> "class t" ++ show number) [1..n]
+      classes = map (\(PushVar (x:xs)) -> "class " ++ [toUpper x] ++ xs) args
 
       completePrefix
         =  prefix
@@ -326,7 +329,7 @@ genGenericArguments stack args
       classes
         = if args /= [TNothing]
             then
-              map (\number -> "t" ++ show number) [1 .. length args]
+              map (\(PushVar (x:xs)) -> [toUpper x] ++ xs) args
             else
               []
 
