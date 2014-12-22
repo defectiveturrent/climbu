@@ -305,7 +305,7 @@ genGenericPrefix n
   = let
       prefix = "template<"
       suffix = "> "
-      classes = map (\number -> "class t_" ++ show number) [1..n]
+      classes = map (\number -> "class t" ++ show number) [1..n]
 
       completePrefix
         =  prefix
@@ -326,7 +326,7 @@ genGenericArguments stack args
       classes
         = if args /= [TNothing]
             then
-              map (\number -> "t_" ++ show number) [1 .. length args]
+              map (\number -> "t" ++ show number) [1 .. length args]
             else
               []
 
