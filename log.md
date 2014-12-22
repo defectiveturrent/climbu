@@ -1,6 +1,10 @@
 Log
 ===
 
+v1.6.2
+------
++ Fixed broken templates' type;
+
 v1.6.1
 ------
 + Now lambdas are defined using the ``~`` prefix;
