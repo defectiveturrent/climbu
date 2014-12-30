@@ -14,7 +14,7 @@ All high-level programming languages are quite easy to learn. The most simple ex
 Ok, taking an exemple: I want a function that plus two elements (generic).
 
 ```c++
-    template<class T> t plus(T a, T b)
+    template<class T> T plus(T a, T b)
     {
         return a + b;
     }
