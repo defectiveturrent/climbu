@@ -15,14 +15,18 @@ Yes. All high-level programming languages are quite easy to learn. The most simp
 
 Ok, taking an exemple: I want a function that plus two elements (generic).
 
+```c++
     template<class T> t plus(T a, T b)
     {
         return a + b;
     }
+```
 
 Hmmm... Ok. Now, let's do the same using climbu:
 
+```haskell
     plus(a, b) = a + b;
+```
 
 Wow, it's fantastic! And note that this little easy code is converted to that big C++ code. The power is the same.
 
