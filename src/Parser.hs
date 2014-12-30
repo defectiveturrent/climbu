@@ -36,7 +36,7 @@ import Inst
     String Revision
 -----------------------------}
 
-stringRevision [] = []
+stringRevision [] = " "
 stringRevision ('.':'.':'.':rest) = " ... " ++ stringRevision rest
 stringRevision ('.':'.':rest) = " .. " ++ stringRevision rest
 stringRevision (x:xs) = x : stringRevision xs
@@ -157,6 +157,7 @@ tokenize (x:xs) | x `elem` whitespaces      = tokenize xs
                               case stack of
                                 "var"     -> DECLARE
                                 "def"     -> FUNCTION
+                                "end"     -> EOF
                                 "if"      -> IF
                                 "then"    -> THEN
                                 "else"    -> ELSE
@@ -328,7 +329,7 @@ parseEofs tokens
 
 
 parseFactors :: Tokens -> (Ast, Tokens)
-parseFactors (DECLARE:(IDENT x):rest)
+parseFactors (DECLARE:IDENT x:rest)
   = (Decl x, rest)
 
 -- Parse idents
@@ -625,6 +626,7 @@ parseHighExp tokens@( prefixToken : restTokens )
 parseExp :: [Token] -> (Ast, [Token])
 parseExp = genericParseExp (genericParseSuperExp parseFactors)
 
+-- There's a wrapper function to choose which nivel of expressions you want to get
 genericParseExp :: (Tokens -> (Ast, Tokens)) -> Tokens -> (Ast, Tokens)
 genericparseExp [] = (Eof, [])
 genericParseExp f tokens
@@ -827,6 +829,9 @@ astRevision (Expo ta (Equ pa pb), tokens) = concept (Equ (Expo ta pa) pb, tokens
 astRevision (Expo ta (Not pa pb), tokens) = concept (Not (Expo ta pa) pb, tokens)
 astRevision (Expo ta (Mod pa pb), tokens) = concept (Mod (Expo ta pa) pb, tokens)
 astRevision (Expo ta (Concat pa pb), tokens) = concept (Concat (Expo ta pa) pb, tokens)
+
+astRevision (Assign (Call (Ident f) [Tuple args]) stuffs, tokens) = (Def (Ident f) args stuffs, tokens)
+astRevision (Assign (Call (Ident f) [Parens (Ident arg)]) stuffs, tokens) = (Def (Ident f) [Ident arg] stuffs, tokens)
 
 astRevision pair = concept pair
 
