@@ -9,9 +9,7 @@ Yeah, it's converted. The Climbu code, when passing by compiler, is converted to
 I like to teach a lot of nice guys around. But it's complex for him. This is the reason to make this little language, just for teaching easy (And for when I be tired to program in C++ (serious)).
 
 ## Okay, let's see it
-- Simple
-
-Yes. All high-level programming languages are quite easy to learn. The most simple expressions are converted to a very complex C++ code. Let's say you want to write a generic function. Not too complex, just a little function for some data management. Using C++ you can write a quite verbose code. Meanwhile, to write the same in climbu is very simple.
+All high-level programming languages are quite easy to learn. The most simple expressions are converted to a very complex C++ code. Let's say you want to write a generic function. Not too complex, just a little function for some data management. Using C++ you can write a quite verbose code. Meanwhile, to write the same in climbu is very simple.
 
 Ok, taking an exemple: I want a function that plus two elements (generic).
 
@@ -47,10 +45,6 @@ Climbu:
         then 1
         else n * factorial . n - 1;
 ```
-
-- No more. The first point is enough.
-
-I think too.
 
 ## Documentation?
 It's coming yet. Not finished. However, you can see the progress here: [Climbu documentation](http://climbu.readthedocs.org/en/latest/)
