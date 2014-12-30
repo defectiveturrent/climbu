@@ -1,30 +1,34 @@
 Climbu!
-=
+=======
 So, what is Climbu? You can say: "Oh, it might be just another programming language, baah, nothing important." But I say to you: "No!! Okay, it's just another programming language, but it's different." How can it be different from other languages? The Climbu is different because it is not compiled or interpreted, it's Converted.
-
-OBS: The Climbu initially was named "Upsilon", and now is Climbu.
 
 ## What? Converted? Be more specific!
 Yeah, it's converted. The Climbu code, when passing by compiler, is converted to an C++ code, and finally compiled. And, again, you say: "Oh, C++? This language is so powerful..." I did think the same.
 
 ## Why are you making this language?
-I like to teach a lot of nice guys around. But it's complex for him, because it I'm making this language, just for teaching easy (And for when I be tired to program in C++ (serious)).
+I like to teach a lot of nice guys around. But it's complex for him. This is the reason to make this little language, just for teaching easy (And for when I be tired to program in C++ (serious)).
 
 ## Okay, let's see it
-- It's high-level
-  + Yeah, so easy to program, so natural to read, so beautiful.
+- Simple
 
-- There's simple features that are tiring in C++
-  + In C++ we haven't comprehension lists, there's only vectors and more vectors, for-loops and more for-loops. In Climbu, the comprehension list is easy and useful.
+Yes. All high-level programming languages are quite easy to learn. The most simple expressions are converted to a very complex C++ code. Let's say you want to write a generic function. Not too complex, just a little function for some data management. Using C++ you can write a quite verbose code. Meanwhile, to write the same in climbu is very simple.
 
-- Functions and Lambdas are simplified
-  + In C++, the functions and lambda functions are very large and tiring to make such. However, in Climbu it's so easy than drink water. The way to make functions and lambda functions in Climbu are simplified too.
+Ok, taking an exemple: I want a function that plus two elements (generic).
 
-- Generic!
-  + Oh yeah, generic programming in C++ is horrible in sense of large codes. In Climbu, the generic programming is in everywhere! There's no types! Yeah! YEAH! Oh... Sorry, I got excited.
+    template<class T> t plus(T a, T b)
+    {
+        return a + b;
+    }
 
-- Simple expressions
-  + Well, the functions' body are simple, not much complex, the language is not for large codes or whatever you think, it's to make good algorithms in the simple and better way.
+Hmmm... Ok. Now, let's do the same using climbu:
+
+    plus(a, b) = a + b;
+
+Wow, it's fantastic! And note that this little easy code is converted to that big C++ code. The power is the same.
+
+- No more. The first point is enough.
+
+I think too.
 
 ## Documentation?
 It's coming yet. Not finished. However, you can see the progress here: [Climbu documentation](http://climbu.readthedocs.org/en/latest/)
