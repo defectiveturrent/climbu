@@ -24,11 +24,29 @@ Ok, taking an exemple: I want a function that plus two elements (generic).
 
 Hmmm... Ok. Now, let's do the same using climbu:
 
-```haskell
+```c++
     plus(a, b) = a + b;
 ```
 
-Wow, it's fantastic! And note that this little easy code is converted to that big C++ code. The power is the same.
+Wow, it's fantastic! And note that this little easy code is converted to that big C++ code. The power is the same. Now look how I make a factorial function in both languages:
+
+```c++
+    int factorial(int n)
+    {
+        if( n <= 0 )
+            return 1;
+
+        return n * factorial(n - 1);
+    }
+```
+
+Climbu:
+
+```c++
+    factorial(n) = if n <= 0
+        then 1
+        else n * factorial . n - 1;
+```
 
 - No more. The first point is enough.
 
