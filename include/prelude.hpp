@@ -33,18 +33,37 @@ using std::vector;
 using std::get;
 using std::pair;
 using std::tuple;
+using std::make_tuple;
 
 using namespace std::placeholders;
-
-#define fst(tuple) get<0>(tuple)
-#define snd(tuple) get<1>(tuple)
-
-#define AND(a, b) (a == false? a : b)
-#define OR(a, b) (a == false? b : a)
 
 #include "type.h"
 #include "lists.hpp"
 #include "system/io.hpp"
+
+template<class t>
+  auto fst (t tuple)
+{
+  return get<0>(tuple);
+}
+
+template<class t>
+  auto snd (t tuple)
+{
+  return get<1>(tuple);
+}
+
+template<class t, class u>
+  auto AND(t a, u b)
+{
+  return (a == false? a : b);
+}
+
+template<class t, class u>
+  auto OR(t a, u b)
+{
+  return (a == false? b : a);
+}
 
 template<class t>
   t sum( const List<t>& list )
