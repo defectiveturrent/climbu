@@ -96,6 +96,7 @@ singleOperators
 keywords
   = [ "var"
     , "def"
+    , "end"
     , "if"
     , "then"
     , "else"
