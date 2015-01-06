@@ -5,7 +5,7 @@ v1.6.2
 ------
 + Fixed broken templates' type;
 + Remade generic types, where the respective type of an argument is its name with first letter in upper case;
-+ Added a cast system (keyword ``as``);
++ Added a cast system (keyword: ``as``);
 
 v1.6.1
 ------
@@ -38,7 +38,7 @@ v1.4
 + Added new way to define functions.
 + Added mathematic syntax to numbers and variables.
 
-Not compiled yet
+Not yet compiled
 ----------------
 Empty
 
