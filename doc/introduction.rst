@@ -17,6 +17,7 @@ Okay, let's see it
 All high-level programming languages are quite easy to learn. The most simple expressions are converted to a very complex C++ code. Let's say you want to write a generic function. Not too complex, just a little function for some data management. Using C++ you can write a quite verbose code. Meanwhile, to write the same in climbu is very simple.
 
 Ok, taking an exemple: I want a function that plus two elements (generic).
+
 .. code:: c++
 
     template<class T> T plus(T a, T b)
@@ -26,12 +27,14 @@ Ok, taking an exemple: I want a function that plus two elements (generic).
 
 
 Hmmm... Ok. Now, let's do the same using climbu:
+
 .. code:: c++
 
     plus(a, b) = a + b;
 
 
 Wow, it's fantastic! And note that this little easy code is converted to that big C++ code. The power is the same. Now look how I make a factorial function in both languages:
+
 .. code:: c++
 
     int factorial(int n)
@@ -44,6 +47,7 @@ Wow, it's fantastic! And note that this little easy code is converted to that bi
 
 
 Climbu:
+
 .. code:: c++
 
     factorial(n) = if n <= 0
