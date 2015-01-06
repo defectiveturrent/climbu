@@ -44,8 +44,7 @@ Empty
 
 In working
 -----------
-+ Partial application;
++ Partial application; // Scratched out.
 + Removing the strings concatenation's bug;
-+ Some ideas from mathematic. Using math in lists (matrix).
-+ Concatenation between lists and primitive types.
++ Some ideas from mathematic. Using math in lists (matrix). // Scratched out.
 + Byte-code Interpreter in C++.
