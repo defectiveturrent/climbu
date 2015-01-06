@@ -6,7 +6,7 @@ v1.6.2
 + Fixed broken templates' type;
 + Remade generic types, where the respective type of an argument is its name with first letter in upper case;
 + Added a cast system (keyword: ``as``);
-
+ 
 v1.6.1
 ------
 + Now lambdas are defined using the ``~`` prefix;
