@@ -14,20 +14,42 @@ I like to teach a lot of nice guys around. But it's complex for him, because it 
 
 Okay, let's see it
 ++++++++++++++++++
-- It's high-level
-  + Yeah, so easy to program, so natural to read, so beautiful.
+All high-level programming languages are quite easy to learn. The most simple expressions are converted to a very complex C++ code. Let's say you want to write a generic function. Not too complex, just a little function for some data management. Using C++ you can write a quite verbose code. Meanwhile, to write the same in climbu is very simple.
 
-- There's simple features that are tiring in C++
-  + In C++ we haven't comprehension lists, there's only vectors and more vectors, for-loops and more for-loops. In Climbu, the comprehension list is easy and useful.
+Ok, taking an exemple: I want a function that plus two elements (generic).
 
-- Functions and Lambdas are simplified
-  + In C++, the functions and lambda functions are very large and tiring to make such. However, in Climbu it's so easy than drink water. The way to make functions and lambda functions in Climbu are simplified too.
+```c++
+    template<class T> T plus(T a, T b)
+    {
+        return a + b;
+    }
+```
 
-- Generic!
-  + Oh yeah, generic programming in C++ is horrible in sense of large codes. In Climbu, the generic programming is in everywhere! There's no types! Yeah! YEAH! Oh... Sorry, I got excited.
+Hmmm... Ok. Now, let's do the same using climbu:
 
-- Simple expressions
-  + Well, the functions' body are simple, not much complex, the language is not for large codes or whatever you think, it's to make good algorithms in the simple and better way.
+```c++
+    plus(a, b) = a + b;
+```
+
+Wow, it's fantastic! And note that this little easy code is converted to that big C++ code. The power is the same. Now look how I make a factorial function in both languages:
+
+```c++
+    int factorial(int n)
+    {
+        if( n <= 0 )
+            return 1;
+
+        return n * factorial(n - 1);
+    }
+```
+
+Climbu:
+
+```c++
+    factorial(n) = if n <= 0
+        then 1
+        else n * factorial . n - 1;
+```
 
 The versions
 ++++++++++++
