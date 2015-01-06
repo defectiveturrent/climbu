@@ -18,7 +18,7 @@ All high-level programming languages are quite easy to learn. The most simple ex
 
 Ok, taking an exemple: I want a function that plus two elements (generic).
 
-.. code:: cpp
+.. highlight:: c
 
     template<class T> T plus(T a, T b)
     {
@@ -28,14 +28,14 @@ Ok, taking an exemple: I want a function that plus two elements (generic).
 
 Hmmm... Ok. Now, let's do the same using climbu:
 
-.. code:: cpp
+.. highlight:: c
 
     plus(a, b) = a + b;
 
 
 Wow, it's fantastic! And note that this little easy code is converted to that big C++ code. The power is the same. Now look how I make a factorial function in both languages:
 
-.. code:: cpp
+.. highlight:: c
 
     int factorial(int n)
     {
@@ -48,7 +48,7 @@ Wow, it's fantastic! And note that this little easy code is converted to that bi
 
 Climbu:
 
-.. code:: cpp
+.. highlight:: c
 
     factorial(n) = if n <= 0
         then 1
