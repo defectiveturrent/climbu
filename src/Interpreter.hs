@@ -3,25 +3,21 @@ module Interpreter where
 import Data.Char
 import Data.List
 import Data.Maybe
-import Expressions
-import Token
 import Ast
-import Inst
 import Parser
-import Translator
 
 import Data.ByteString (ByteString)
 import Data.ByteString.Char8 (pack, unpack)
 
-readString :: String -> [Inst]
-readString str = read str :: [Inst]
+readString :: String -> [Ast]
+readString str = read str :: [Ast]
 
-saveBytecode :: [Inst] -> String -> IO ()
+saveBytecode :: [Ast] -> String -> IO ()
 saveBytecode bc path
   = do
     writeFile path (show bc)
 
-openBytecode :: String -> IO [Inst]
+openBytecode :: String -> IO [Ast]
 openBytecode path
   = do
     s <- readFile path
@@ -32,45 +28,20 @@ data Ast
   = Def Ast [Ast] Ast                  -- ID [ARGS] BODY
   | Assign Ast Ast                     -- Assign AST AST
   | Decl String                        -- var foo
-  | Add Ast Ast                        -- Plus AST AST
-  | Sub Ast Ast                        -- Minus AST AST
-  | Mul Ast Ast                        -- Times AST AST
-  | Div Ast Ast                        -- Divides AST AST
-  | Grt Ast Ast                        -- Greater Than AST AST
-  | Ge  Ast Ast                        -- Greater or equal AST AST
-  | Let Ast Ast                        -- Less Than AST AST
-  | Le  Ast Ast                        -- Less or equal AST AST
-  | Equ Ast Ast                        -- Equal AST AST
-  | Not Ast Ast                        -- Not equal AST AST
   | Mod Ast Ast                        -- Module AST AST
-  | And Ast Ast                        -- Expressive and
-  | Or Ast Ast                         -- Expressive or
   | Take Ast Ast                       -- list take n
-  | Expo Ast Ast                       -- Exponential AST AST
-  | Concat Ast Ast                     -- Concat a list
+  | ComprehensionList [Ast]            -- ComprehensionList [DATES] // [1, 2, 3]
   | CountList Ast Ast                  -- CountList Ast Ast // [0..9]
   | Ident String                       -- VAR
-  | CharString String                  -- A string
-  | CharByte Char                      -- A character
-  | Num Int                            -- Integer number
-  | Numf Float                         -- Float number
-  | Parens Ast                         -- ( )
   | Tuple [Ast]                        -- (a, 7, "hello")
-  | ComprehensionList [Ast]            -- ComprehensionList [DATES] // [1, 2, 3]
   | LambdaDef [Ast] Ast                -- LambdaDef [ARGS] BODY // {n = n + foo}
   | Call Ast [Ast]                     -- ID [ARGS]
-  | Then Ast                           -- The 'then' part of 'if' block
-  | Else Ast                           -- The 'else' part of 'if' block
-  | Condition Ast Ast Ast              -- (Condition ast) (Then ast) (Else ast)
   | IsEither Ast [Ast]                 -- n in either 1 2 3
   | IsNeither Ast [Ast]                 -- n in either 1 2 3
-  | When Ast                           -- Simple condition
-  | In Ast Ast                         -- Simple operator, like each
   | For Ast Ast Ast                    -- Specific comprehension list
   | DoIn [Ast] Ast                     -- An expression that allows to make more expressions on a single block
   | Import String                      -- To import a library
   | ListPM [Ast] Ast                   -- A list's pattern matching operator (:) ( [Head] Tail )
-  | Negate Ast                         --
   | Try Ast                            --
   | MatchWith Ast [Ast] Ast            -- match Stat with [Stats] otherwise-stat
   | AsCast Ast Ast                     --
@@ -82,29 +53,50 @@ data Ast
 data Type
   = INT
   | FLOAT
-  | TCHAR
+  | CHAR
   | BOOL
   | LIST Type
   deriving(Show, Eq)
 
-data Chunk = Chunk ByteString Type deriving(Show)
+data Chunk = Chunk ByteString Type
+           | List [Chunk] Type
+
+value (Chunk bs _) = unpack bs
+
+instance Show Chunk where
+  show (Chunk bs t) = unpack bs ++ "\n\n :: " ++ map toLower (show t)
+  show (List chunks@(Chunk _ _:_) _)
+    = let
+        elems = map (\(Chunk bs _) -> unpack bs) chunks
+      in
+        "[" ++ intercalate ", " elems ++ "]"
+
+  show (List list _)
+    = "[" ++ intercalate ", " (map show list) ++ "]"
 
 readi n = read n :: Int
 readf n = read n :: Float
+readb n = read n :: Bool
+readstr n = read n :: String
+readli n = read n :: [Int]
+readlf n = read n :: [Float]
+readlb n = read n :: [Bool]
 
 packShow :: (Show a) => a -> ByteString
 packShow = pack . show
 
-test x = eval . fst . parseHighExp . parseTokens $! x
+test = (eval . fst . parseHighExp . parseTokens $!)
 
 eval :: Ast -> Chunk
 
 eval (Num x) = Chunk (packShow x) INT
 eval (Numf x) = Chunk (packShow x) FLOAT
-eval (CharByte x) = Chunk (packShow x) TCHAR
-eval (Ident "true") = Chunk (packShow "true") BOOL
-eval (Ident "false") = Chunk (packShow "false") BOOL
-eval (CharString xs) = Chunk (packShow xs) (LIST TCHAR)
+eval (CharByte x) = Chunk (packShow x) CHAR
+eval (Ident "True") = Chunk (packShow True) BOOL
+eval (Ident "False") = Chunk (packShow False) BOOL
+eval (Ident "true") = Chunk (packShow True) BOOL
+eval (Ident "false") = Chunk (packShow False) BOOL
+eval (CharString xs) = Chunk (packShow xs) (LIST CHAR)
 
 eval (Negate (Parens (Num x))) = eval (Num (-x))
 eval (Negate (Parens (Numf x))) = eval (Numf (-x))
@@ -116,44 +108,193 @@ eval (Add a b)
       (Chunk x xt) = eval a
       (Chunk y yt) = eval b
 
-      applyadd :: Type -> Type -> Chunk
-      applyadd INT INT = Chunk (packShow (readi (unpack x) + readi (unpack y))) INT
-      applyadd INT FLOAT = applyadd FLOAT FLOAT
-      applyadd FLOAT INT = applyadd FLOAT FLOAT
-      applyadd FLOAT FLOAT = Chunk (packShow (readf (unpack x) + readf (unpack y))) FLOAT
+      apply :: Type -> Type -> Chunk
+      apply INT INT = Chunk (packShow (readi (unpack x) + readi (unpack y))) INT
+      apply INT FLOAT = apply FLOAT FLOAT
+      apply FLOAT INT = apply FLOAT FLOAT
+      apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) + readf (unpack y))) FLOAT
     in
-      applyadd xt yt
+      apply xt yt
+
+eval (Sub a b)
+  = let
+      (Chunk x xt) = eval a
+      (Chunk y yt) = eval b
+
+      apply :: Type -> Type -> Chunk
+      apply INT INT = Chunk (packShow (readi (unpack x) - readi (unpack y))) INT
+      apply INT FLOAT = apply FLOAT FLOAT
+      apply FLOAT INT = apply FLOAT FLOAT
+      apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) - readf (unpack y))) FLOAT
+    in
+      apply xt yt
+
+eval (Mul a b)
+  = let
+      (Chunk x xt) = eval a
+      (Chunk y yt) = eval b
+
+      apply :: Type -> Type -> Chunk
+      apply INT INT = Chunk (packShow (readi (unpack x) * readi (unpack y))) INT
+      apply INT FLOAT = apply FLOAT FLOAT
+      apply FLOAT INT = apply FLOAT FLOAT
+      apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) * readf (unpack y))) FLOAT
+    in
+      apply xt yt
+
+eval (Div a b)
+  = let
+      (Chunk x xt) = eval a
+      (Chunk y yt) = eval b
+
+      apply :: Type -> Type -> Chunk
+      apply INT INT = Chunk (packShow (readi (unpack x) `div` readi (unpack y))) INT
+      apply INT FLOAT = apply FLOAT FLOAT
+      apply FLOAT INT = apply FLOAT FLOAT
+      apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) / readf (unpack y))) FLOAT
+    in
+      apply xt yt
+
+eval (Expo a b)
+  = let
+      (Chunk x xt) = eval a
+      (Chunk y yt) = eval b
+
+      apply :: Type -> Type -> Chunk
+      apply INT INT = Chunk (packShow (readi (unpack x) ^ readi (unpack y))) INT
+      apply INT FLOAT = apply FLOAT FLOAT
+      apply FLOAT INT = apply FLOAT FLOAT
+      apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) ** readf (unpack y))) FLOAT
+    in
+      apply xt yt
+
+eval (Grt a b)
+  = let
+      (Chunk x xt) = eval a
+      (Chunk y yt) = eval b
+
+      apply :: Type -> Type -> Chunk
+      apply INT INT = Chunk (packShow (readi (unpack x) > readi (unpack y))) BOOL
+      apply INT FLOAT = apply FLOAT FLOAT
+      apply FLOAT INT = apply FLOAT FLOAT
+      apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) > readf (unpack y))) BOOL
+    in
+      apply xt yt
+
+eval (Ge a b)
+  = let
+      (Chunk x xt) = eval a
+      (Chunk y yt) = eval b
+
+      apply :: Type -> Type -> Chunk
+      apply INT INT = Chunk (packShow (readi (unpack x) >= readi (unpack y))) BOOL
+      apply INT FLOAT = apply FLOAT FLOAT
+      apply FLOAT INT = apply FLOAT FLOAT
+      apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) >= readf (unpack y))) BOOL
+    in
+      apply xt yt
+
+eval (Let a b)
+  = let
+      (Chunk x xt) = eval a
+      (Chunk y yt) = eval b
+
+      apply :: Type -> Type -> Chunk
+      apply INT INT = Chunk (packShow (readi (unpack x) < readi (unpack y))) BOOL
+      apply INT FLOAT = apply FLOAT FLOAT
+      apply FLOAT INT = apply FLOAT FLOAT
+      apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) < readf (unpack y))) BOOL
+    in
+      apply xt yt
+
+eval (Le a b)
+  = let
+      (Chunk x xt) = eval a
+      (Chunk y yt) = eval b
+
+      apply :: Type -> Type -> Chunk
+      apply INT INT = Chunk (packShow (readi (unpack x) <= readi (unpack y))) BOOL
+      apply INT FLOAT = apply FLOAT FLOAT
+      apply FLOAT INT = apply FLOAT FLOAT
+      apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) <= readf (unpack y))) BOOL
+    in
+      apply xt yt
+
+eval (Equ a b)
+  = let
+      (Chunk x xt) = eval a
+      (Chunk y yt) = eval b
+
+      apply :: Type -> Type -> Chunk
+      apply INT INT = Chunk (packShow (readi (unpack x) == readi (unpack y))) BOOL
+      apply INT FLOAT = apply FLOAT FLOAT
+      apply FLOAT INT = apply FLOAT FLOAT
+      apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) == readf (unpack y))) BOOL
+    in
+      apply xt yt
+
+eval (Not a b)
+  = let
+      (Chunk x xt) = eval a
+      (Chunk y yt) = eval b
+
+      apply :: Type -> Type -> Chunk
+      apply INT INT = Chunk (packShow (readi (unpack x) /= readi (unpack y))) BOOL
+      apply INT FLOAT = apply FLOAT FLOAT
+      apply FLOAT INT = apply FLOAT FLOAT
+      apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) /= readf (unpack y))) BOOL
+    in
+      apply xt yt
 
 eval (Concat a b)
   = let
       (Chunk x xt) = eval a
       (Chunk y yt) = eval b
 
-      applyadd :: Type -> Type -> Chunk
-      applyadd (LIST TCHAR) (LIST TCHAR) = Chunk (packShow ((read (unpack x) :: String) ++ (read (unpack y) :: String))) (LIST TCHAR)
+      apply :: Type -> Type -> Chunk
+      apply (LIST CHAR) (LIST CHAR) = Chunk (packShow (readstr (unpack x) ++ readstr (unpack y))) (LIST CHAR)
+      apply (LIST INT) (LIST INT) = Chunk (packShow (readli (unpack x) ++ readli (unpack y))) (LIST INT)
+      apply (LIST FLOAT) (LIST FLOAT) = Chunk (packShow (readlf (unpack x) ++ readlf (unpack y))) (LIST FLOAT)
+      apply (LIST BOOL) (LIST BOOL) = Chunk (packShow (readlb (unpack x) ++ readlb (unpack y))) (LIST BOOL)
+      -- TODO: apply (LIST lat) (LIST lbt)
     in
-      applyadd xt yt
+      apply xt yt
 
-{-
-eval (Add a b) = eval a + eval b
-eval (Sub a b) = eval a - eval b
-eval (Mul a b) = eval a * eval b
-eval (Div a b) = eval a `div` eval b
-eval (Mod a b) = eval a `mod` eval b
+eval comp@(ComprehensionList xs)
+  = let
+      getType (Num _) = INT
+      getType (Numf _) = FLOAT
+      getType (CharByte _) = CHAR
+      getType (CharString _) = LIST CHAR
+      getType (ComprehensionList (a:_)) = LIST $ getType a
+      getType (CountList a _) = LIST $ getType a -- TOFIX
 
-eval (Expo a b) = eval a ^ eval b
+    in
+      List (map eval xs) (getType comp)
 
-eval (Grt a b) = if eval a > eval b  then 1 else 0
-eval (Ge  a b) = if eval a >= eval b then 1 else 0
-eval (Let a b) = if eval a < eval b  then 1 else 0
-eval (Le  a b) = if eval a <= eval b then 1 else 0
-eval (Equ a b) = if eval a == eval b then 1 else 0
-eval (Not a b) = if eval a /= eval b then 1 else 0
+eval (CountList (Num a) (Num b)) = eval . ComprehensionList . map Num $ [a..b]
+eval (CountList (Numf a) (Numf b)) = eval . ComprehensionList . map Numf $ [a..b]
+eval (CountList (CharByte a) (CharByte b)) = eval . ComprehensionList . map CharByte $ [a..b]
+eval (CountList (Ident "True") (Ident "False")) = eval . ComprehensionList [Ident "True", Ident "False"]
+eval (CountList (Ident "False") (Ident "True")) = eval . ComprehensionList [Ident "False", Ident "True"]
 
-eval (And a b) = if eval a /= 0 && eval b /= 0 then 1 else 0
-eval (Or  a b) = if eval a /= 0 || eval b /= 0 then 1 else 0
+eval (And a b)
+  = let
+      (Chunk x _) = eval a
+      (Chunk y _) = eval b
+    in
+      Chunk (packShow (readb (unpack x) && readb (unpack y))) BOOL
 
-eval (Parens a) = eval a
+eval (Or a b)
+  = let
+      (Chunk x _) = eval a
+      (Chunk y _) = eval b
+    in
+      Chunk (packShow (readb (unpack x) || readb (unpack y))) BOOL
 
-eval (Condition a b c) = if eval a == 1 then eval b else eval c
--}
+eval (Condition stat right wrong)
+  = let
+      (Chunk stat' _) = eval stat
+    in
+      if readb (unpack stat') then eval right else eval wrong
+
