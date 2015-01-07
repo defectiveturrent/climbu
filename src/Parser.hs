@@ -400,7 +400,7 @@ parseFactors al@(OPENPAREN:rest)
               = let
                   (condition, CLOSEPAREN:r3) = parseSuperExp r2
                 in
-                  (For xpr (In (Ident n) list) (When condition), r3)
+                  (For xpr (Ident n `In` list) (When condition), r3)
 
             subparse (list, CLOSEPAREN:r2)
               = (For xpr (In (Ident n) list) (When Void), r2)

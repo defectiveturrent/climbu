@@ -28,16 +28,23 @@ import Data.List
 import Expressions
 import Parser
 import qualified Translator as Cpp
--- import qualified Lua
+import qualified Interpreter
+import qualified Control.Exception as Exc
 
 main = toTry `catch` handler
 
 catch = catchIOError
 
 toTry :: IO ()
-toTry = do
-    (command:args) <- getArgs
-    let (Just action) = lookup command dispatch in action args -- gets the function that corresponds to argument
+toTry
+  = do
+      args <- getArgs
+      let
+        command = if null args then "--REPL" else head args
+        rest = if null args then [] else tail args
+        (Just action) = lookup command dispatch
+      
+      action rest -- gets the function that corresponds to argument
 
 handler :: IOError -> IO ()  
 handler e
@@ -51,6 +58,7 @@ commands = [ "-c"             -- compile
            , "--version"      -- version
            , "-h"             -- help
            , "--help"         -- help
+           , "--REPL"         -- interpreter
            ]
 
 dispatch :: [ (String, [String] -> IO ()) ]
@@ -60,6 +68,7 @@ dispatch = zip commands [ compile
                         , version
                         , help
                         , help
+                        , repl
                         ]
 
 compile (executable:pathsource:_)
@@ -119,3 +128,18 @@ help _
       putStrLn "  {-h --help}                    Shows help"
       putStrLn []
       putStrLn "Report bugs to <blueoatstudio@gmail.com>"
+
+repl _
+  = let
+      sub stack
+        = do
+            putStr "climbu> "
+            hFlush stdout
+            line <- getLine
+            let
+              new = stack ++ [line]
+            Exc.catch (print $ Interpreter.test line) ((\exc -> print exc) :: Exc.ErrorCall -> IO ())
+            putStrLn []
+            sub new
+    in
+      sub []

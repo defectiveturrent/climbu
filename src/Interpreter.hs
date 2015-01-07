@@ -28,7 +28,6 @@ data Ast
   = Def Ast [Ast] Ast                  -- ID [ARGS] BODY
   | Assign Ast Ast                     -- Assign AST AST
   | Decl String                        -- var foo
-  | Mod Ast Ast                        -- Module AST AST
   | Take Ast Ast                       -- list take n
   | Ident String                       -- VAR
   | Tuple [Ast]                        -- (a, 7, "hello")
@@ -54,23 +53,55 @@ data Type
   | CHAR
   | BOOL
   | LIST Type
-  deriving(Show, Eq)
+  | TUPLE [Type]
+  deriving(Eq)
 
 data Chunk = Chunk ByteString Type
            | List [Chunk] Type
+           | Tuplec [Chunk] Type
 
 value (Chunk bs _) = unpack bs
 
-instance Show Chunk where
-  show (Chunk bs t) = unpack bs ++ "\n\n :: " ++ map toLower (show t)
-  show (List chunks@(Chunk _ _:_) _)
-    = let
-        elems = map (\(Chunk bs _) -> unpack bs) chunks
-      in
-        "[" ++ intercalate ", " elems ++ "]"
+{--------------------------
+  Don't look here,
+              go away.
+---------------------------}
 
-  show (List list _)
-    = "[" ++ intercalate ", " (map show list) ++ "]"
+instance Show Type where
+  show INT = "Int"
+  show FLOAT = "Float"
+  show CHAR = "Char"
+  show BOOL = "Bool"
+  show (LIST r) = "[" ++ show r ++ "]"
+  show (TUPLE r) = "(" ++ intercalate "," (map show r) ++ ")"
+
+instance Show Chunk where
+  show chunk@(Chunk _ t) = showChunk chunk ++ " :: " ++ show t
+  show list@(List _ t) = showChunk list ++ " :: " ++ show t
+  show tuple@(Tuplec _ t) = showChunk tuple ++ " :: " ++ show t
+
+showChunk (Chunk bs _) = unpack bs
+
+showChunk (List list (LIST CHAR))
+  = show $ foldr (\(Chunk bs _) acc -> (readc $ unpack bs) : acc) [] list
+
+showChunk (List chunks@(Chunk _ _:_) _)
+  = let
+      elems = map (\(Chunk bs _) -> unpack bs) chunks
+    in
+      "[" ++ intercalate ", " elems ++ "]"
+
+showChunk (List list _)
+  = "[" ++ intercalate ", " (map showChunk list) ++ "]"
+
+showChunk (Tuplec chunks _)
+  = "(" ++ intercalate ", " (map showChunk chunks) ++ ")"
+
+
+{--------------------------
+  Okay, you
+          can get back now
+---------------------------}
 
 readi n = read n :: Int
 readf n = read n :: Float
@@ -89,6 +120,7 @@ literaleval (CountList (Numf a) (Numf b)) = ComprehensionList . map Numf $ [a..b
 literaleval (CountList (CharByte a) (CharByte b)) = ComprehensionList . map CharByte $ [a..b]
 literaleval (CountList (Ident "True") (Ident "False")) = ComprehensionList [Ident "True", Ident "False"]
 literaleval (CountList (Ident "False") (Ident "True")) = ComprehensionList [Ident "False", Ident "True"]
+literaleval (CharString xs) = ComprehensionList $ map CharByte xs
 literaleval comp@(ComprehensionList xs) = comp
 
 test = (eval . fst . parseHighExp . parseTokens $!)
@@ -102,7 +134,7 @@ eval (Ident "True") = Chunk (packShow True) BOOL
 eval (Ident "False") = Chunk (packShow False) BOOL
 eval (Ident "true") = Chunk (packShow True) BOOL
 eval (Ident "false") = Chunk (packShow False) BOOL
-eval (CharString xs) = Chunk (packShow xs) (LIST CHAR)
+eval str@(CharString _) = eval $ literaleval str
 
 eval (Negate (Parens (Num x))) = eval (Num (-x))
 eval (Negate (Parens (Numf x))) = eval (Numf (-x))
@@ -305,3 +337,7 @@ eval (Condition stat right wrong)
     in
       if readb (unpack stat') then eval right else eval wrong
 
+eval (For what (In (Ident n) list) (When Void))
+  = eval list
+
+eval ast = error $ "Unknown Ast: " ++ show ast
