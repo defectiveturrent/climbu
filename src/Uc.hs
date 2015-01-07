@@ -28,7 +28,7 @@ import Data.List
 import Expressions
 import Parser
 import qualified Translator as Cpp
-import qualified Interpreter
+import Interpreter
 import qualified Control.Exception as Exc
 
 main = toTry `catch` handler
@@ -137,9 +137,9 @@ repl _
             hFlush stdout
             line <- getLine
             let
-              new = stack ++ [line]
-            Exc.catch (print $ Interpreter.test line) ((\exc -> print exc) :: Exc.ErrorCall -> IO ())
+              new = evaluate stack (getAst line) : stack
+            Exc.catch (print $ head new) ((\exc -> do print exc) :: Exc.ErrorCall -> IO ())
             putStrLn []
-            sub new
+            sub (case head new of (Declaration (Chunk n _) _ _) -> head new : removeIdent n (tail new); _ -> new)
     in
       sub []
