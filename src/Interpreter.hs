@@ -30,8 +30,6 @@ data Ast
   | Decl String                        -- var foo
   | Mod Ast Ast                        -- Module AST AST
   | Take Ast Ast                       -- list take n
-  | ComprehensionList [Ast]            -- ComprehensionList [DATES] // [1, 2, 3]
-  | CountList Ast Ast                  -- CountList Ast Ast // [0..9]
   | Ident String                       -- VAR
   | Tuple [Ast]                        -- (a, 7, "hello")
   | LambdaDef [Ast] Ast                -- LambdaDef [ARGS] BODY // {n = n + foo}
@@ -77,6 +75,7 @@ instance Show Chunk where
 readi n = read n :: Int
 readf n = read n :: Float
 readb n = read n :: Bool
+readc n = read n :: Char
 readstr n = read n :: String
 readli n = read n :: [Int]
 readlf n = read n :: [Float]
@@ -84,6 +83,13 @@ readlb n = read n :: [Bool]
 
 packShow :: (Show a) => a -> ByteString
 packShow = pack . show
+
+literaleval (CountList (Num a) (Num b)) = ComprehensionList . map Num $ [a..b]
+literaleval (CountList (Numf a) (Numf b)) = ComprehensionList . map Numf $ [a..b]
+literaleval (CountList (CharByte a) (CharByte b)) = ComprehensionList . map CharByte $ [a..b]
+literaleval (CountList (Ident "True") (Ident "False")) = ComprehensionList [Ident "True", Ident "False"]
+literaleval (CountList (Ident "False") (Ident "True")) = ComprehensionList [Ident "False", Ident "True"]
+literaleval comp@(ComprehensionList xs) = comp
 
 test = (eval . fst . parseHighExp . parseTokens $!)
 
@@ -246,19 +252,22 @@ eval (Not a b)
     in
       apply xt yt
 
-eval (Concat a b)
+eval (Mod a b)
   = let
       (Chunk x xt) = eval a
       (Chunk y yt) = eval b
 
       apply :: Type -> Type -> Chunk
-      apply (LIST CHAR) (LIST CHAR) = Chunk (packShow (readstr (unpack x) ++ readstr (unpack y))) (LIST CHAR)
-      apply (LIST INT) (LIST INT) = Chunk (packShow (readli (unpack x) ++ readli (unpack y))) (LIST INT)
-      apply (LIST FLOAT) (LIST FLOAT) = Chunk (packShow (readlf (unpack x) ++ readlf (unpack y))) (LIST FLOAT)
-      apply (LIST BOOL) (LIST BOOL) = Chunk (packShow (readlb (unpack x) ++ readlb (unpack y))) (LIST BOOL)
-      -- TODO: apply (LIST lat) (LIST lbt)
+      apply INT INT = Chunk (packShow (readi (unpack x) `mod` readi (unpack y))) INT
     in
       apply xt yt
+
+eval (Concat a b)
+  = let
+      (ComprehensionList x) = literaleval a
+      (ComprehensionList y) = literaleval b
+    in
+      eval . ComprehensionList $ x ++ y
 
 eval comp@(ComprehensionList xs)
   = let
@@ -266,17 +275,15 @@ eval comp@(ComprehensionList xs)
       getType (Numf _) = FLOAT
       getType (CharByte _) = CHAR
       getType (CharString _) = LIST CHAR
+      getType (Ident "True") = BOOL
+      getType (Ident "False") = BOOL
       getType (ComprehensionList (a:_)) = LIST $ getType a
       getType (CountList a _) = LIST $ getType a -- TOFIX
 
     in
       List (map eval xs) (getType comp)
 
-eval (CountList (Num a) (Num b)) = eval . ComprehensionList . map Num $ [a..b]
-eval (CountList (Numf a) (Numf b)) = eval . ComprehensionList . map Numf $ [a..b]
-eval (CountList (CharByte a) (CharByte b)) = eval . ComprehensionList . map CharByte $ [a..b]
-eval (CountList (Ident "True") (Ident "False")) = eval . ComprehensionList [Ident "True", Ident "False"]
-eval (CountList (Ident "False") (Ident "True")) = eval . ComprehensionList [Ident "False", Ident "True"]
+eval count@(CountList a b) = eval $ literaleval count
 
 eval (And a b)
   = let
