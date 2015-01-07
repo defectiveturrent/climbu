@@ -26,10 +26,8 @@ openBytecode path
 {-
 data Ast
   = Def Ast [Ast] Ast                  -- ID [ARGS] BODY
-  | Assign Ast Ast                     -- Assign AST AST
   | Decl String                        -- var foo
   | Take Ast Ast                       -- list take n
-  | Ident String                       -- VAR
   | Tuple [Ast]                        -- (a, 7, "hello")
   | LambdaDef [Ast] Ast                -- LambdaDef [ARGS] BODY // {n = n + foo}
   | Call Ast [Ast]                     -- ID [ARGS]
@@ -373,8 +371,19 @@ evaluate stack
           in
             if readb (unpack stat') then eval right else eval wrong
 
-      eval (For what (In (Ident n) list) (When Void))
-        = eval list
+      eval for@(For what (In (Ident n) list) (When Void))
+        = let
+            checkList
+              = case list of
+                  ComprehensionList _ -> let (List content _) = eval list in content
+                  CountList _ _ -> let (List content _) = eval list in content
+                  Ident m -> let (List content _) = getFromStack m stack in content
+                  _ -> error $ "Some values are lost: " ++ show for
+
+            mapped = map (\x -> evaluate ((Declaration (Chunk (pack n) (typeof x)) x (typeof x)) : stack) what) checkList
+          in
+            List mapped (LIST . typeof . head $ mapped)
+
 
       eval (Assign (Ident n) tree)
         = Declaration (Chunk (pack n) t) evaluedTree t
