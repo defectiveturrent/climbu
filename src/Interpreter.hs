@@ -24,23 +24,15 @@ openBytecode path
     return (readString s)
 
 {-
-data Ast
-  = Def Ast [Ast] Ast                  -- ID [ARGS] BODY
-  | Decl String                        -- var foo
   | Take Ast Ast                       -- list take n
   | Tuple [Ast]                        -- (a, 7, "hello")
   | LambdaDef [Ast] Ast                -- LambdaDef [ARGS] BODY // {n = n + foo}
-  | Call Ast [Ast]                     -- ID [ARGS]
   | IsEither Ast [Ast]                 -- n in either 1 2 3
   | IsNeither Ast [Ast]                 -- n in either 1 2 3
-  | For Ast Ast Ast                    -- Specific comprehension list
   | DoIn [Ast] Ast                     -- An expression that allows to make more expressions on a single block
   | Import String                      -- To import a library
   | ListPM [Ast] Ast                   -- A list's pattern matching operator (:) ( [Head] Tail )
-  | Try Ast                            --
-  | MatchWith Ast [Ast] Ast            -- match Stat with [Stats] otherwise-stat
   | AsCast Ast Ast                     --
-  | Special SpecialDate                --
   | Void                               -- Used to stuff something empty
   | Eof                                -- used to end a complete expression
   -}
@@ -52,12 +44,16 @@ data Type
   | BOOL
   | LIST Type
   | TUPLE [Type]
+  | FUNCTION Type
+  | GENERIC
   deriving(Eq)
 
 data Chunk = Chunk ByteString Type
            | List [Chunk] Type
            | Tuplec [Chunk] Type
            | Declaration Chunk Chunk Type
+           | Functionc ByteString [Ast] Ast
+           | Callf Chunk
            deriving (Eq)
 
 value (Chunk bs _) = unpack bs
@@ -69,6 +65,7 @@ typeof (Chunk _ t) = t
 typeof (List _ t) = t
 typeof (Tuplec _ t) = t
 typeof (Declaration _ _ t) = t
+typeof (Functionc _ _ _) = FUNCTION GENERIC
 
 {--------------------------
   Don't look here,
@@ -82,12 +79,15 @@ instance Show Type where
   show BOOL = "Bool"
   show (LIST r) = "[" ++ show r ++ "]"
   show (TUPLE r) = "(" ++ intercalate "," (map show r) ++ ")"
+  show (FUNCTION r) = "Function -> " ++ show r
+  show GENERIC = "generic"
 
 instance Show Chunk where
   show chunk@(Chunk _ t) = showChunk chunk ++ " :: " ++ show t
   show list@(List _ t) = showChunk list ++ " :: " ++ show t
   show tuple@(Tuplec _ t) = showChunk tuple ++ " :: " ++ show t
   show decl@(Declaration _ _ t) = showChunk decl ++ " :: " ++ show t
+  show func@(Functionc _ _ _) = showChunk func ++ " :: " ++ show (FUNCTION GENERIC)
 
 showChunk (Chunk bs _) = unpack bs
 
@@ -108,6 +108,8 @@ showChunk (Tuplec chunks _)
 
 showChunk (Declaration var chunk _)
   = showChunk var ++ " = " ++ showChunk chunk
+
+showChunk (Functionc fnname args _) = unpack fnname ++ " " ++ intercalate " " (map (\(Ident x) -> x) args)
 
 {--------------------------
   Okay, you
@@ -140,14 +142,15 @@ getAst = (fst . parseHighExp . parseTokens $!)
 
 lookupIdent _ [] = Nothing
 lookupIdent ident (chunk@(Declaration (Chunk n _) content t) : xs) | ident == unpack n = Just content
-                                                                   | otherwise = lookupIdent ident xs
+
+lookupIdent ident (def@(Functionc fn args body):xs) | ident == unpack fn = Just def
 
 lookupIdent ident (_:xs) = lookupIdent ident xs
 
 getFromStack ident stack
   = case lookupIdent ident stack of
       Just c -> c
-      Nothing -> error $ ident ++ " doesn't exist"
+      Nothing -> Chunk (pack "") GENERIC --error $ ident ++ " doesn't exist"
 
 removeIdent _ [] = []
 removeIdent ident (chunk@(Declaration (Chunk n _) _ t) : xs) | unpack ident == unpack n = xs
@@ -361,6 +364,7 @@ evaluate stack
       eval (Or a b)
         = let
             (Chunk x _) = eval a
+
             (Chunk y _) = eval b
           in
             Chunk (packShow (readb (unpack x) || readb (unpack y))) BOOL
@@ -384,7 +388,6 @@ evaluate stack
           in
             List mapped (LIST . typeof . head $ mapped)
 
-
       eval (Assign (Ident n) tree)
         = Declaration (Chunk (pack n) t) evaluedTree t
           where
@@ -392,5 +395,26 @@ evaluate stack
             t = typeof evaluedTree
 
       eval (Ident n) = getFromStack n stack
+
+      eval (Def (Ident fnname) args body)
+        = Functionc (pack fnname) args body
+
+      eval (Call (Ident fnname) args)
+        = let
+            (Functionc _ args' body') = getFromStack fnname stack
+            setLocals = map eval $ zipWith (\i@(Ident n) what -> Assign i what) args' args
+          in
+            evaluate (setLocals ++ stack) body'
+
+      eval (DoIn asts result)
+        = let
+            sub stack' other [] = (stack, other)
+            sub stack' other (a@(Assign (Ident n) content):xs) = sub (evaluate (stack' ++ stack) a : stack') other xs
+            sub stack' other (x:xs) = sub stack' (eval x : other) xs
+
+            (s, _) = sub [] [] asts
+          in
+            evaluate (s ++ stack) result -- FIXIT
+
 
       eval ast = error $ "Unknown Ast: " ++ show ast
