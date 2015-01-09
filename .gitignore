@@ -3,5 +3,6 @@ src/Lua.hs
 src/int
 src/OldParser.hs
 src/guide.hs
+include
 ComplerExample.hs
 climbu
