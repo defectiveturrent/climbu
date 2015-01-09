@@ -304,6 +304,7 @@ evaluate stack
             apply INT FLOAT = apply FLOAT FLOAT
             apply FLOAT INT = apply FLOAT FLOAT
             apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) == readf (unpack y))) BOOL
+            apply BOOL BOOL = Chunk (packShow (readb (unpack x) == readb (unpack y))) BOOL
           in
             apply xt yt
 
@@ -407,11 +408,10 @@ evaluate stack
 
       eval (DoIn asts result)
         = let
-            sub stack' other [] = (stack, other)
-            sub stack' other (a@(Assign (Ident n) content):xs) = sub (evaluate (stack' ++ stack) a : stack') other xs
-            sub stack' other (x:xs) = sub stack' (eval x : other) xs
+            sub stack' [] = stack'
+            sub stack' (x:xs) = sub (stack' ++ [evaluate (stack' ++ stack) x]) xs
 
-            (s, _) = sub [] [] asts
+            s = sub [] asts
           in
             evaluate (s ++ stack) result -- FIXIT
 
