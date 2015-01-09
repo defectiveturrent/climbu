@@ -46,38 +46,20 @@ data Ast
   | CharByte Char                      -- A character
   | Num Int                            -- Integer number
   | Numf Float                         -- Float number
-  | Parens Ast                         -- ( )
   | Tuple [Ast]                        -- (a, 7, "hello")
   | ComprehensionList [Ast]            -- ComprehensionList [DATES] // [1, 2, 3]
   | LambdaDef [Ast] Ast                -- LambdaDef [ARGS] BODY // {n = n + foo}
   | Call Ast [Ast]                     -- ID [ARGS]
-  | Then Ast                           -- The 'then' part of 'if' block
-  | Else Ast                           -- The 'else' part of 'if' block
   | Condition Ast Ast Ast              -- (Condition ast) (Then ast) (Else ast)
   | IsEither Ast [Ast]                 -- n in either 1 2 3
   | IsNeither Ast [Ast]                 -- n in either 1 2 3
-  | When Ast                           -- Simple condition
   | In Ast Ast                         -- Simple operator, like each
   | For Ast Ast Ast                    -- Specific comprehension list
   | DoIn [Ast] Ast                     -- An expression that allows to make more expressions on a single block
   | Import String                      -- To import a library
   | ListPM [Ast] Ast                   -- A list's pattern matching operator (:) ( [Head] Tail )
   | Negate Ast                         --
-  | Try Ast                            --
-  | MatchWith Ast [Ast] Ast            -- match Stat with [Stats] otherwise-stat
   | AsCast Ast Ast                     --
-  | Special SpecialDate                --
   | Void                               -- Used to stuff something empty
   | Eof                                -- used to end a complete expression
   deriving (Show, Read, Eq)
-
--- Special contents
-data SpecialDate
-  = Undefined
-  | NaN
-  | Infinite
-  | NuL
-  | NuT
-  | NuS
-  | Null
-  deriving(Show, Read, Eq, Enum)

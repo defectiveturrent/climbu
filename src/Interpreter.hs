@@ -173,10 +173,9 @@ evaluate stack
       eval (Ident "false") = Chunk (packShow False) BOOL
       eval str@(CharString _) = eval $ literaleval str
 
-      eval (Negate (Parens (Num x))) = eval (Num (-x))
-      eval (Negate (Parens (Numf x))) = eval (Numf (-x))
-
-      eval (Parens a) = eval a
+      eval (Negate (Num x)) = eval (Num (-x))
+      eval (Negate (Numf x)) = eval (Numf (-x))
+      eval (Negate x) = eval (Sub (Num 0) x)
 
       eval (Add a b)
         = let
@@ -375,7 +374,7 @@ evaluate stack
           in
             if readb (unpack stat') then eval right else eval wrong
 
-      eval for@(For what (In (Ident n) list) (When Void))
+      eval for@(For what (In (Ident n) list) (Void))
         = let
             checkList
               = case list of

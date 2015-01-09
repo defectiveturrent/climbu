@@ -35,7 +35,7 @@ import Ast
     String Revision
 -----------------------------}
 
-stringRevision [] = " ;"
+stringRevision [] = ";"
 stringRevision ('.':'.':'.':rest) = " ... " ++ stringRevision rest
 stringRevision ('.':'.':rest) = " .. " ++ stringRevision rest
 stringRevision (x:xs) = x : stringRevision xs
@@ -87,19 +87,14 @@ tokenize ('"':rest)
     in
       subtokenize rest []
 
-
 tokenize ('\'':x:'\'':rest) = CHAR x : tokenize rest
 
-
--- (comments)
 tokenize ('/':'/':rest)
   = let
       (_, rest2) = break (=='\n') rest
     in
       tokenize (if null rest2 then [] else tail rest2)
 
-
--- (comments)
 tokenize ('(':'*':rest)
   = let
       subtokenize [] = []
@@ -110,10 +105,6 @@ tokenize ('(':'*':rest)
         = subtokenize rest2
     in
       subtokenize rest
-
-tokenize ('(':')':rest)
-  = VOIDARGUMENTS : tokenize rest
-
 
 tokenize ('`':rest)
   = let
@@ -236,20 +227,6 @@ tokenAdjustments (x:xs)
 tokenRevision :: Tokens -> Tokens
 tokenRevision [] = []
 
-tokenRevision al@(DECLARE:IDENT x:some:rest)
-  = case some of
-      ASSIGN -> DECLARE : IDENT x : ASSIGN : tokenRevision rest
-      _ -> report BadVarDeclaration (showt [DECLARE, IDENT x, some]) (showt al)
-
-tokenRevision (IDENT x:OPCALLFUNCTION n:rest)
-  = IDENT x : OPCALLFUNCTION n : tokenRevision rest
-
-tokenRevision (FUNCTION:rest)
-  = let
-      (body, rest2) = break (==ASSIGN) rest
-    in
-      FUNCTION : body ++ tokenRevision rest2
-
 tokenRevision (LAMBDA:rest)
   = let
       (body, rest2) = break (==RARROW) rest
@@ -267,9 +244,6 @@ tokenRevision (ISNEITHER:rest)
       (body, rest2) = break (==THEN) rest
     in
       ISNEITHER : body ++ tokenRevision rest2
-
-tokenRevision (IDENT x:VOIDARGUMENTS:ASSIGN:rest)
-  = tokenRevision (FUNCTION : IDENT x : ASSIGN : rest)
 
 tokenRevision (x:rest) = x : tokenRevision rest
 
@@ -294,9 +268,6 @@ parseLines xs = let (ast, EOF:r) = parse xs in ast : parseLines r
 ----------------------------
 
 factor :: Tokens -> Parsed Ast
-
-factor (DECLARE : IDENT y : rest)
-  = (Decl y, rest)
 
 factor (IDENT y : rest)
   = (Ident y, rest)
@@ -325,11 +296,11 @@ factor (CALLALONE y : rest)
 factor (IMPORT y : rest)
   = (Import y, rest)
 
-factor (NULLSTRING : rest)
-  = (Special NuS, rest)
+factor (OPENLIST : CLOSELIST : rest)
+  = (ComprehensionList [], rest)
 
-factor (NULL : rest)
-  = (Special Null, rest)
+factor (OPENPAREN : CLOSEPAREN : rest)
+  = (Tuple [], rest)
 
 factor (OPENLIST : rest)
   = let
@@ -346,7 +317,11 @@ factor (OPENLIST : rest)
 
 factor (OPENPAREN : xs)
   = let
-      sub (y, CLOSEPAREN:ys) = (Parens y, ys)
+      sub (y, CLOSEPAREN:ys)
+        = case y of
+            Ident _ -> (Tuple [y], ys)
+            _       -> (y, ys)
+
       sub (y, COMMA:ys)
         = let
             subparse stack (z, COMMA:zs) = subparse (stack ++ [z]) (parse zs)
@@ -356,7 +331,41 @@ factor (OPENPAREN : xs)
       in
         sub $ parse xs
 
-factor _ = error "Unbelievably, this abstract syntax tree is not part of my knowledge"
+-- factor _ = error "Unbelievably, this abstract syntax tree is not part of my knowledge"
+factor _ = (Void, [EOF])
+
+----------------------------
+
+----------------------------
+
+quark :: Tokens -> Parsed Ast
+
+quark (MINUS : tokens)
+  = let
+      (x, xs) = quark tokens
+    in
+      (Negate x, xs)
+
+quark tokens@(IDENT y : ys)
+  = let
+      fold stack [] = (stack, [])
+      fold stack tokens
+        = let
+            (w, ws) = factor tokens
+          in
+            if w /= Void
+              then
+                fold (stack ++ [w]) ws
+              else
+                (stack, tokens)
+
+      (z, zs) = fold [] ys
+    in
+      case z of
+        [] -> factor tokens
+        _  -> (Call (Ident y) z, zs)
+
+quark tokens = factor tokens
 
 ----------------------------
 
@@ -366,7 +375,7 @@ proton :: Tokens -> Parsed Ast
 
 proton tokens
   = let
-      (x, xs) = factor tokens
+      (x, xs) = quark tokens
     in
       case xs of
         (MUL : ys) ->
@@ -379,7 +388,7 @@ proton tokens
           let
             (z, zs) = proton ys
           in
-            (Mul x z, zs)
+            (Div x z, zs)
 
         (EXP : ys) ->
           let
@@ -492,6 +501,19 @@ cell (IF:tokens)
     in
       (Condition x y z, zs)
 
+cell (DO:tokens)
+  = let
+      sub stack (y, IN:ys)
+        = let
+            (z, zs) = parse ys -- uses parse for getting high precedence
+          in
+            (DoIn (stack ++ [y]) z, zs)
+
+      sub stack (y, COMMA:ys)
+        = sub (stack ++ [y]) $ parse ys
+    in
+      sub [] $ parse tokens
+
 cell tokens
   = let
       (x, xs) = atom tokens
@@ -509,13 +531,78 @@ cell tokens
           in
             (Or x z, zs)
 
+        -- For (What to do) (x in list) (when)
         (FOR : ys) ->
-          
+          let
+            (ident, IN:zs) = cell ys
+
+            checkCondition (l, WHEN:ws)
+              = let
+                  (c, rs) = cell ws
+                in
+                  (For x (ident `In` l) (c), rs)
+
+            checkCondition (l, ws)
+              = (For x (ident `In` l) (Void), ws)
+          in
+            checkCondition $ cell zs
+
+        (ASSIGN : ys) ->
+          let
+            (z, zs) = cell ys
+          in
+            (Assign x z, zs)
+
+        (LARROW : ys) ->
+          let
+            (z, zs) = cell ys
+
+          in
+            (Call x [Call z []], zs)
+
+        (OPCALLFUNCTION n : ys) ->
+          let
+            (z, zs) = cell ys
+          in
+            (Call (Ident n) [x, z],  zs)
+
+        (COMPOSITION : ys) ->
+          let
+            (z, zs) = cell ys
+          in
+            case x of
+              Call n args -> (Call n (args ++ [z]), zs)
+              Ident _     -> (Call x [z],  zs)
 
         _ ->
           (x, xs)
 
+----------------------------
 
-parse = cell
+----------------------------
 
-parser = cell . parseTokens 
+human tokens
+  = let
+      sub (Ident foo, xs)
+        = let
+            (y, ys) = factor xs
+          in
+            case (y, ys) of
+              (Tuple z, ASSIGN : zs) -> (Def (Ident foo) z body, rest)
+                                        where
+                                          (body, rest) = cell zs
+
+              _ ->
+                cell tokens
+
+      sub _ = cell tokens
+
+    in
+      sub $ factor tokens
+
+----------------------------
+
+----------------------------
+
+parse = human
+parser = human . parseTokens 
