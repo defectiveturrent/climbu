@@ -27,11 +27,11 @@ import Data.Maybe
 import Data.List
 import Expressions
 import Parser
-import qualified Translator as Cpp
 import Interpreter
 import qualified Control.Exception as Exc
 
-main = toTry `catch` handler
+main = do hSetBuffering stdin LineBuffering
+          toTry `catch` handler
 
 catch = catchIOError
 
@@ -73,40 +73,22 @@ dispatch = zip commands [ compile
 
 compile (executable:pathsource:_)
   = do
-      stringsource <- readFile pathsource
-      generatedCode <- return $ Cpp.genCode stringsource
-      case generatedCode of
-        Right clines ->
-          do
-            filebyteName <- return $ executable ++ ".cpp"
-            writeFile filebyteName clines
-            system $ "clang++ -std=c++14 -Wc++11-extensions -o" ++ executable ++ " " ++ filebyteName
-            return ()
-
-        Left msg ->
-          putStrLn msg
+      source <- readFile pathsource
+      saveBytecode (parseLines . parseTokens $ source) (executable ++ ".sh")
       return ()
 
-interpret (lines:_)
-  = let
-      generatedCode = Cpp.genCode $ "main() = println (" ++ lines ++ ");"
+interpret (line:_)
+  = do
+      let hError :: Exc.ErrorCall -> IO ()
+          hError exception = putStrLn $ show exception
 
-    in do
-        case generatedCode of
-          Right clines ->
-            do
-              writeFile ".cpp_temp_cl.cpp" clines
-              system "clang++ -std=c++14 -Wc++11-extensions .cpp_temp_cl.cpp -o .tmpcl"
-              system "./.tmpcl"
-              return ()
-
-          Left msg ->
-            putStrLn msg
-        return ()
+      Exc.catch (print $ evaluate [] (getAst line)) hError
+      hFlush stdout
+      return ()
 
 version _
   = do
-      putStrLn "Climbu compiler v1.6.3 (Painting with types) - Copyright (C) 2014  Mario Feroldi"
+      putStrLn "Climbu compiler v1.7 (The seventh seal is opened) - Copyright (C) 2014 - 2015  Mario Feroldi"
       putStrLn "This program comes with ABSOLUTELY NO WARRANTY."
       putStrLn "This is free software, and you are welcome to redistribute it"
       putStrLn "under GPL v3 license.\n"
@@ -130,16 +112,33 @@ help _
       putStrLn "Report bugs to <blueoatstudio@gmail.com>"
 
 repl _
-  = let
-      sub stack
-        = do
-            putStr "climbu> "
-            hFlush stdout
-            line <- getLine
-            let
-              new = evaluate stack (getAst line) : stack
-            Exc.catch (print $ head new) ((\exc -> do print exc) :: Exc.ErrorCall -> IO ())
-            putStrLn []
-            sub (case head new of (Declaration (Chunk n _) _ _) -> head new : removeIdent n (tail new); _ -> new)
-    in
+  = do
+      version [""]
+      let
+        hError :: [Chunk] -> Exc.ErrorCall -> IO ()
+        hError stack exception
+          = do
+              putStrLn $ show exception
+              putStrLn []
+              hFlush stdout
+              sub stack
+
+        sub stack
+          = do
+              putStr "climbu> "
+              hFlush stdout
+              line <- getLine
+              let
+                interpreted = evaluate stack (getAst line)
+
+              Exc.catch (print interpreted) $ hError stack
+
+              let
+                new = interpreted : stack
+
+              putStrLn []
+              sub $ case head new of
+                (Declaration (Chunk n _) _ _) -> head new : removeIdent n (tail new)
+                _ -> new
+      
       sub []

@@ -3,7 +3,7 @@ GHC = ghc
 GHC_OPTS = --make
 GHC_FLAGS = -o climbu
 GHC_HIOFILES = -odir tmp/ -hidir tmp/
-SOURCE = $(SRC_DIR)/Uc $(SRC_DIR)/Expressions $(SRC_DIR)/Token $(SRC_DIR)/Ast $(SRC_DIR)/Inst $(SRC_DIR)/Parser $(SRC_DIR)/Translator $(SRC_DIR)/ErrorHandler $(SRC_DIR)/Interpreter
+SOURCE = $(SRC_DIR)/Uc $(SRC_DIR)/Expressions $(SRC_DIR)/Token $(SRC_DIR)/Ast $(SRC_DIR)/Parser.hs $(SRC_DIR)/ErrorHandler $(SRC_DIR)/Interpreter
 
 
 all:

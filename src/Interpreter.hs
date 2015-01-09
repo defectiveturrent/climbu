@@ -15,13 +15,13 @@ readString str = read str :: [Ast]
 saveBytecode :: [Ast] -> String -> IO ()
 saveBytecode bc path
   = do
-    writeFile path (show bc)
+    writeFile path ("#!climbu\n" ++ show bc)
 
 openBytecode :: String -> IO [Ast]
 openBytecode path
   = do
     s <- readFile path
-    return (readString s)
+    return $ readString s
 
 {-
   | Take Ast Ast                       -- list take n
@@ -136,9 +136,9 @@ literaleval (CountList (Ident "False") (Ident "True")) = ComprehensionList [Iden
 literaleval (CharString xs) = ComprehensionList $ map CharByte xs
 literaleval comp@(ComprehensionList xs) = comp
 
-test = (evaluate [] . fst . parseHighExp . parseTokens $!)
+test = (evaluate [] . fst . parser $!)
 
-getAst = (fst . parseHighExp . parseTokens $!)
+getAst = (fst . parse . parseTokens $!)
 
 lookupIdent _ [] = Nothing
 lookupIdent ident (chunk@(Declaration (Chunk n _) content t) : xs) | ident == unpack n = Just content
@@ -150,7 +150,7 @@ lookupIdent ident (_:xs) = lookupIdent ident xs
 getFromStack ident stack
   = case lookupIdent ident stack of
       Just c -> c
-      Nothing -> Chunk (pack "") GENERIC --error $ ident ++ " doesn't exist"
+      Nothing -> error $ ident ++ " doesn't exist"
 
 removeIdent _ [] = []
 removeIdent ident (chunk@(Declaration (Chunk n _) _ t) : xs) | unpack ident == unpack n = xs

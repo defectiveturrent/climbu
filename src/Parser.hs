@@ -1,6 +1,6 @@
 {-
     Climbu compiler / interpreter
-    Copyright (C) 2014  Mario Feroldi
+    Copyright (C) 2014 - 2015 Mario Feroldi
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,7 +26,6 @@ import Expressions
 import ErrorHandler
 import Token
 import Ast
-import Inst
 
 {-----------------------------
     String to Token Parser
@@ -36,7 +35,7 @@ import Inst
     String Revision
 -----------------------------}
 
-stringRevision [] = " "
+stringRevision [] = " ;"
 stringRevision ('.':'.':'.':rest) = " ... " ++ stringRevision rest
 stringRevision ('.':'.':rest) = " .. " ++ stringRevision rest
 stringRevision (x:xs) = x : stringRevision xs
@@ -269,29 +268,8 @@ tokenRevision (ISNEITHER:rest)
     in
       ISNEITHER : body ++ tokenRevision rest2
 
-tokenRevision (CLOSEPAREN:IDENT x:rest)
-  = CLOSEPAREN : MUL : IDENT x : tokenRevision rest
-
-tokenRevision (CLOSEPAREN:CONST x:rest)
-  = CLOSEPAREN : MUL : CONST x : tokenRevision rest
-
-tokenRevision (CONST x:OPENPAREN:rest)
-  = CONST x : MUL : OPENPAREN : tokenRevision rest
-
-tokenRevision (CONST x:IDENT y:rest)
-  = CONST x : MUL : IDENT y : tokenRevision rest
-
-tokenRevision (CONSTF x:OPENPAREN:rest)
-  = CONSTF x : MUL : OPENPAREN : tokenRevision rest
-
-tokenRevision (CONSTF x:IDENT y:rest)
-  = CONSTF x : MUL : IDENT y : tokenRevision rest
-
 tokenRevision (IDENT x:VOIDARGUMENTS:ASSIGN:rest)
   = tokenRevision (FUNCTION : IDENT x : ASSIGN : rest)
-
-tokenRevision (STRING a:STRING b:rest)
-  = STRING a : CONCATLIST : tokenRevision (STRING b : rest)
 
 tokenRevision (x:rest) = x : tokenRevision rest
 
@@ -303,654 +281,241 @@ parseTokens
       Token to Ast Parser
 -----------------------------}
 
-parseEofs :: Tokens -> Either String Asts
-parseEofs [] = Right []
-parseEofs tokens
-  = let
-      (pretokens, rest) = break (==EOF) tokens
-      (exptree, exprest) = parseHighExp pretokens
+-- Abstraction for writting fast
+type Parsed a = (a, Tokens)
 
-    in
-      if null exprest
-        then
-          if null rest
-            then
-              Right [exptree]
-            else
-              case (parseEofs (tail rest)) of
-                Right x
-                  -> Right (exptree : x)
-                
-                Left msg
-                  -> Left msg
+-- Parses a sequence of individual expressions
+parseLines :: Tokens -> Asts
+parseLines [] = []
+parseLines xs = let (ast, EOF:r) = parse xs in ast : parseLines r
 
-      else
-        Left $ mkmsg ExcessRubbish (showt exprest) (showt pretokens)
+----------------------------
 
+----------------------------
 
-parseFactors :: Tokens -> (Ast, Tokens)
-parseFactors (DECLARE:IDENT x:rest)
-  = (Decl x, rest)
+factor :: Tokens -> Parsed Ast
 
--- Parse idents
-parseFactors ((IDENT x):rest)
-  = (Ident x, rest)
+factor (DECLARE : IDENT y : rest)
+  = (Decl y, rest)
 
-parseFactors (TRUE:rest)
-  = (Ident "true", rest)
+factor (IDENT y : rest)
+  = (Ident y, rest)
 
-parseFactors (FALSE:rest)
-  = (Ident "false", rest)
+factor (TRUE : rest)
+  = (Ident "True", rest)
 
-parseFactors ((STRING str):rest)
+factor (FALSE : rest)
+  = (Ident "False", rest)
+
+factor (STRING str : rest)
   = (CharString str, rest)
 
-parseFactors ((CHAR ch):rest)
-  = (CharByte ch, rest)
+factor (CHAR y : rest)
+  = (CharByte y, rest)
 
--- Parse numbers
-parseFactors ((CONST x):rest)
-  = (Num x, rest)
+factor (CONST y : rest)
+  = (Num y, rest)
 
-parseFactors ((CONSTF x):rest)
-  = (Numf x, rest)
+factor (CONSTF y : rest)
+  = (Numf y, rest)
 
-parseFactors (YADAYADA:rest)
-  = (Call (Ident "throw") [Call (Ident "ClimbuException") [CharString "Not yet implemented"]], rest)
+factor (CALLALONE y : rest)
+  = (Call (Ident y) [], rest)
 
-parseFactors ((CALLALONE x):rest)
-  = (Call (Ident x) [], rest)
+factor (IMPORT y : rest)
+  = (Import y, rest)
 
-parseFactors ((IMPORT x):rest)
-  = (Import x, rest)
-
-parseFactors ((NULLSTRING):rest)
+factor (NULLSTRING : rest)
   = (Special NuS, rest)
 
-parseFactors ((NULL):rest)
+factor (NULL : rest)
   = (Special Null, rest)
 
-parseFactors (OPENPAREN:CLOSEPAREN:rest)
-  = (Special NuT, rest)
-
-parseFactors (OPENPAREN:MINUS:rest)
+factor (OPENLIST : rest)
   = let
-      factor = OPENPAREN : rest
-      (parsed, rest2) = parseFactors factor
-
-    in
-      (Negate parsed, rest2)
-
--- Parse parentheses
-parseFactors al@(OPENPAREN:rest)
-  = let
-      parseXpr (xpr, CLOSEPAREN:rest2)
-        = (Parens xpr, rest2)
-
-      parseXpr (xpr, COMMA:rest2)
+      sub stack (ast, COUNTLIST:xs)
         = let
-            subparse stack (expr, COMMA:xs) = subparse (stack ++ [expr]) (parseSuperExp xs)
-            subparse stack (expr, CLOSEPAREN:xs) = (Tuple (stack ++ [expr]), xs)
+            (y, CLOSELIST:ys) = parse xs
           in
-            subparse [xpr] (parseSuperExp rest2)
+            (CountList ast y, ys)
 
-      parseXpr (xpr, FOR:IDENT n:IN:rest2)
+      sub stack (ast, COMMA:xs) = sub (stack ++ [ast]) $ parse xs
+      sub stack (ast, CLOSELIST:xs) = (ComprehensionList (stack ++ [ast]), xs)
+    in
+      sub [] $ parse rest
+
+factor (OPENPAREN : xs)
+  = let
+      sub (y, CLOSEPAREN:ys) = (Parens y, ys)
+      sub (y, COMMA:ys)
         = let
-            subparse (list, WHEN:r2)
-              = let
-                  (condition, CLOSEPAREN:r3) = parseSuperExp r2
-                in
-                  (For xpr (Ident n `In` list) (When condition), r3)
-
-            subparse (list, CLOSEPAREN:r2)
-              = (For xpr (In (Ident n) list) (When Void), r2)
-
-            subparse (wrong, r) = report BadMethod "Bad for" (showt r)
+            subparse stack (z, COMMA:zs) = subparse (stack ++ [z]) (parse zs)
+            subparse stack (z, CLOSEPAREN:zs) = (Tuple (stack ++ [z]), zs)
           in
-            subparse (parseSuperExp rest2)
+            subparse [y] (parse ys)
+      in
+        sub $ parse xs
 
-      parseXpr (xpr, r) = report BadMethod "Lost parentheses" (showt al)
+factor _ = error "Unbelievably, this abstract syntax tree is not part of my knowledge"
+
+----------------------------
+
+----------------------------
+
+proton :: Tokens -> Parsed Ast
+
+proton tokens
+  = let
+      (x, xs) = factor tokens
     in
-      astRevision . parseXpr . parseSuperExp $ rest
+      case xs of
+        (MUL : ys) ->
+          let
+            (z, zs) = proton ys
+          in
+            (Mul x z, zs)
 
-parseFactors al@(OPENLIST:CLOSELIST:rest)
-  = report BadList "Empty list can't exists" (showt al)
+        (DIV : ys) ->
+          let
+            (z, zs) = proton ys
+          in
+            (Mul x z, zs)
 
-parseFactors al@(OPENLIST:rest)
+        (EXP : ys) ->
+          let
+            (z, zs) = proton ys
+          in
+            (Expo x z, zs)
+
+        _ ->
+          (x, xs)
+
+----------------------------
+
+----------------------------
+
+neutron :: Tokens -> Parsed Ast
+
+neutron tokens
   = let
-      -- Comprehension list
-      parseXpr (xpr, COUNTLIST:rest2)
-        = let
-            (e, CLOSELIST:r) = parseSuperExp rest2
-          in
-            (CountList xpr e, r)
-
-      -- Common list
-      parseXpr (xpr, COMMA:rest2)
-        = let
-            subparse stack (expr, COMMA:xs) = subparse (stack ++ [expr]) (parseSuperExp xs)
-            subparse stack (expr, CLOSELIST:xs) = (ComprehensionList (stack ++ [expr]), xs)
-          in
-            subparse [xpr] (parseSuperExp rest2)
-
-      -- Just one element
-      parseXpr (xpr, CLOSELIST:rest2)
-        = (ComprehensionList [xpr], rest2)
-
-      parseXpr (xpr, r) = report BadList "Lost brackets" (showt al)
+      (x, xs) = proton tokens
     in
-      astRevision . parseXpr . parseSuperExp $ rest
+      case xs of
+        (PLUS : ys) ->
+          let
+            (z, zs) = neutron ys
+          in
+            (Add x z, zs)
 
--- If expression
-parseFactors (IF:rest)
+        (MINUS : ys) ->
+          let
+            (z, zs) = neutron ys
+          in
+            (Sub x z, zs)
+
+        (MOD : ys) ->
+          let
+            (z, zs) = neutron ys
+          in
+            (Mod x z, zs)
+
+        (CONCATLIST : ys) ->
+          let
+            (z, zs) = neutron ys
+          in
+            (Concat x z, zs)
+
+        _ ->
+          (x, xs)
+
+----------------------------
+
+----------------------------
+
+atom :: Tokens -> Parsed Ast
+
+atom tokens
   = let
-      (stat, restStat) = parseSuperExp rest
-      (Then thenStat, restThen) = getExp $ parseSuperExp restStat
-      (Else elseStat, restElse) = getExp $ parseSuperExp restThen
-
-      getExp (Then stat, r) = (Then stat, r)
-      getExp (Else Eof, r) = report IncompleteIfBlock (showt (IF:rest)) (showt [ELSE, EOF])
-      getExp (Else (Else e), r) = report BadMethod (showt (IF:rest)) (showt [ELSE,ELSE])
-      getExp (Else stat, r) = (Else stat, r)
-      getExp (e, r) = report IncompleteIfBlock (showt (IF:rest)) (show e)
-    
+      (x, xs) = neutron tokens
     in
-      (Condition stat thenStat elseStat, restElse)
+      case xs of
+        (GRTH : ys) ->
+          let
+            (z, zs) = atom ys
+          in
+            (Grt x z, zs)
 
-  -- IF Expression
-  --
-parseFactors (THEN:rest)
+        (GRTHEQ : ys) ->
+          let
+            (z, zs) = atom ys
+          in
+            (Ge x z, zs)
+
+        (LSTH : ys) ->
+          let
+            (z, zs) = atom ys
+          in
+            (Let x z, zs)
+
+        (LSTHEQ : ys) ->
+          let
+            (z, zs) = atom ys
+          in
+            (Le x z, zs)
+
+        (EQUAL : ys) ->
+          let
+            (z, zs) = atom ys
+          in
+            (Equ x z, zs)
+
+        (NOT : ys) ->
+          let
+            (z, zs) = atom ys
+          in
+            (Not x z, zs)
+
+        _ ->
+          (x, xs)
+
+----------------------------
+
+----------------------------
+
+cell :: Tokens -> Parsed Ast
+
+cell (IF:tokens)
   = let
-      (stat, rest2) = parseSuperExp rest
-
+      (x, THEN:xs) = cell tokens
+      (y, ELSE:ys) = cell xs
+      (z, zs) = cell ys
     in
-     (Then stat, rest2)
+      (Condition x y z, zs)
 
-  -- IF Expression
-  --
-parseFactors (ELSE:rest)
+cell tokens
   = let
-      (stat, rest2) = parseSuperExp rest
-
+      (x, xs) = atom tokens
     in
-      (Else stat, rest2)
-
--- Parse end of
-parseFactors (EOF:rest)
-  = (Eof, rest)
-
-parseFactors tokens = report SyntaxError (showt tokens) []
-
-parseFactor :: Token -> Ast
-parseFactor token
-  = fst $ parseFactors [token]
-
-parseAllFactors :: Tokens -> (Asts, Tokens)
-parseAllFactors tokens'
-  = let
-      parsef' (ast, tokens)
-        = let
-            (nast, rest) = genericParseExp parseFactors tokens
-
-            nextToken = if null rest then VOID else head rest
-          in
-            if (nextToken /= VOID) && not (nextToken `elem` eofers)
-              then
-                parsef' (ast ++ [nast], rest)
-
-              else
-                (ast ++ [nast], rest)
-     in
-      parsef' ([], tokens')
-
-parseEachFactor :: Tokens -> (Asts, Tokens)
-parseEachFactor tokens'
-  = let
-      parsef' (ast, tokens)
-        = let
-            (nast, rest) = parseFactors tokens
-
-            nextToken = if null rest then VOID else head rest
-          in
-            if (nextToken /= VOID) && not (nextToken `elem` eofers)
-              then
-                parsef' (ast ++ [nast], rest)
-
-              else
-                (ast ++ [nast], rest)
-     in
-      parsef' ([], tokens')
-
-genericParseSuperExp :: (Tokens -> (Ast, Tokens)) -> Tokens -> (Ast, Tokens)
-genericParseSuperExp _ []
-  = (Eof, [])
-
-genericParseSuperExp f (t:[])
-  = f [t]
-
-genericParseSuperExp f (t:[EOF])
-  = f [t]
-
-genericParseSuperExp f tokens@(prefix:restfix)
-  = case prefix of
-      IDENT ident ->
-        if head restfix `notElem` eofers
-          then
-            let
-              getArgs ([], stack) = ([], stack)
-              getArgs (a@(x:_), stack)
-                = if x `notElem` eofers
-                    then
-                      let (ast, r) = parseFactors a in getArgs (r, stack ++ [ast])
-                    else
-                      (a, stack)
-            in
-              let
-                (restTokens, stack) = getArgs (restfix, [])
-              in
-                (Call (Ident ident) stack, restTokens)
-          else
-            f tokens
-
-      _ ->
-        f tokens
-
-parseSuperExp :: Tokens -> (Ast, Tokens)
-parseSuperExp = genericParseSuperExp (parseHighExp)
-
-parseHighExp :: Tokens -> (Ast, Tokens)
-parseHighExp []
-  = (Eof, [])
-
-parseHighExp tokens@(_:[])
-  = parseFactors tokens
-
-parseHighExp tokens@( prefixToken : restTokens )
-  = case prefixToken of
-      FUNCTION ->
-        let
-          (stat : rest) = restTokens -- Separates tokens in prefix, stat and rest
-
-          functionIdent = parseFactor stat
-          arguments =  (\xs -> if null xs then [] else fst $ parseAllFactors xs) $ takeWhile (/=ASSIGN) rest
-          (bodyFunction, rest2) = parseSuperExp . tail . dropWhile (/=ASSIGN) $ rest -- Remove Assign from head (tail)
-            
-        in
-          (Def functionIdent arguments bodyFunction, rest2)
-
-      LAMBDA ->
-        let
-          arguments = if head restTokens == RARROW then [] else fst . parseAllFactors . takeWhile (/=RARROW) $ restTokens
-          (bodyFunction, rest2) = parseSuperExp . tail . getExp . dropWhile (/=RARROW) $ restTokens -- Remove arrow from head (tail)
-
-          getExp [] = report BadLambdaDeclaration (showt tokens) []
-          getExp rt = rt
-
-        in
-          (LambdaDef arguments bodyFunction, rest2)
-
-      DO ->
-        let
-          (declarations, rest) = getExp (let (d, r) = parseSuperExp restTokens in ([d], r))
-          (todo, rest2) = parseSuperExp rest
-
-          getExp (d, COMMA:r) = let (ast, r2) = parseSuperExp r in getExp (d ++ [ast], r2)
-          getExp (d, IN:r) = (d, r)
-          getExp (d, r) = report IncompleteDoBlock (showt tokens) (showt r)          
-        
-        in
-          (DoIn declarations todo, rest2)
-
-      TRY ->
-        let
-          (s, rest) = parseSuperExp restTokens
-        
-        in
-          (Try s, rest)
-
-      MATCH -> -- TODO
-        let
-          -- Gets identifier
-          (ident, rest) = getExp $ parseFactors restTokens
-
-          -- Get sure the expression is right
-          getExp (d, WITH:r) = (d, r)
-          getExp (d, r) = report BadMethod (showt tokens) (showt r)
-        in
-          (MatchWith ident [Eof] Eof, rest)
-
-      othertokens ->
-        parseExp tokens
-
-
-parseExp :: [Token] -> (Ast, [Token])
-parseExp = genericParseExp (genericParseSuperExp parseFactors)
-
--- There's a wrapper function to choose which nivel of expressions you want to get
-genericParseExp :: (Tokens -> (Ast, Tokens)) -> Tokens -> (Ast, Tokens)
-genericparseExp [] = (Eof, [])
-genericParseExp f tokens
-  = let
-      (factortree, rest) = f tokens -- FIX this shit!!!
-
-    in
-     astRevision $ case rest of
-        (ASSIGN : rest2) ->
+      case xs of
+        (AND : ys) ->
           let
-            (subexptree, rest3) = parseSuperExp rest2
+            (z, zs) = cell ys
           in
-            astRevision ( Assign factortree subexptree, rest3 )
+            (And x z, zs)
 
-        (PLUS : rest2) ->
+        (OR : ys) ->
           let
-            (subexptree, rest3) = parseSuperExp rest2
+            (z, zs) = cell ys
           in
-            astRevision ( Add factortree subexptree, rest3 )
+            (Or x z, zs)
 
-        (MINUS : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-          in
-            astRevision ( Sub factortree subexptree, rest3 )
+        (FOR : ys) ->
+          
 
-        (MUL : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-          in
-            astRevision ( Mul factortree subexptree, rest3 )
-
-        (DIV : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-          in
-            astRevision ( (case subexptree of
-                            Num 0 ->
-                              Special Infinite
-
-                            _ ->
-                              Div factortree subexptree
-                        ),  rest3 )
-
-        (GRTH : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-          in
-            astRevision ( Grt factortree subexptree, rest3 )
-
-        (GRTHEQ : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-          in
-            astRevision ( Ge factortree subexptree, rest3 )
-
-        (LSTH : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-          in
-            astRevision ( Let factortree subexptree, rest3 )
-
-        (LSTHEQ : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-          in
-            astRevision ( Le factortree subexptree, rest3 )
-
-        (EQUAL : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-          in
-            astRevision( Equ factortree subexptree, rest3 )
-        
-        (NOT : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-          in
-            astRevision ( Not factortree subexptree, rest3 )
-
-        (MOD : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-          in
-            astRevision ( Mod factortree subexptree, rest3 )
-
-        (AND : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-
-          in
-            astRevision (And factortree subexptree, rest3)
-
-        (OR : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-
-          in
-            astRevision (Or factortree subexptree, rest3)
-
-        (COMPOSITION : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-          in
-            astRevision ( Call factortree [subexptree],  rest3 )
-
-        (TAKE : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-          in
-            astRevision ( Take factortree subexptree, rest3 )
-
-        (EXP : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-          in
-            astRevision ( Expo factortree subexptree, rest3 )
-
-        (CONCATLIST : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-          in
-            astRevision ( Concat factortree subexptree, rest3 )
-
-        (OPCALLFUNCTION n : rest2) ->
-          let
-            (subexptree, rest3) = parseSuperExp rest2
-          in
-            astRevision ( Call (Ident n) [factortree, subexptree],  rest3 )
-
-        (ISEITHER : rest2) ->
-          let
-            (subexptree, rest3) = parseEachFactor rest2
-
-          in
-            astRevision ( IsEither factortree subexptree, rest3 )
-
-        (ISNEITHER : rest2) ->
-          let
-            (subexptree, rest3) = parseEachFactor rest2
-
-          in
-            astRevision ( IsNeither factortree subexptree, rest3 )
-
-        (LARROW : rest2) ->
-          let
-            (subexptree, rest3) = parseFactors rest2
-
-          in
-            astRevision (Call factortree [Call subexptree []], rest3)
-
-        (AS : rest2) ->
-          let
-            (subexptree, rest3) = parseFactors rest2
-
-          in
-            astRevision (AsCast factortree subexptree, rest3)
-
-        -- Like an 'otherwise'
-        othertokens ->   -- TODO
-          astRevision (factortree, othertokens)
+        _ ->
+          (x, xs)
 
 
-astRevision (Parens (Parens ast), tokens) = concept (Parens ast, tokens)
-astRevision (ComprehensionList [CountList pa pb], tokens) = concept (CountList pa pb, tokens)
+parse = cell
 
-astRevision (Mul ta (Add pa pb), tokens) = concept (Add (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Sub pa pb), tokens) = concept (Sub (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Div pa pb), tokens) = concept (Div (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Grt pa pb), tokens) = concept (Grt (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Ge  pa pb), tokens) = concept (Ge  (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Let pa pb), tokens) = concept (Let (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Le  pa pb), tokens) = concept (Le  (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Equ pa pb), tokens) = concept (Equ (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Not pa pb), tokens) = concept (Not (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Mod pa pb), tokens) = concept (Mod (Mul ta pa) pb, tokens)
-astRevision (Mul ta (Concat pa pb), tokens) = concept (Concat (Mul ta pa) pb, tokens)
-
-astRevision (Div ta (Add pa pb), tokens) = concept (Add (Div ta pa) pb, tokens)
-astRevision (Div ta (Sub pa pb), tokens) = concept (Sub (Div ta pa) pb, tokens)
-astRevision (Div ta (Grt pa pb), tokens) = concept (Grt (Div ta pa) pb, tokens)
-astRevision (Div ta (Ge  pa pb), tokens) = concept (Ge  (Div ta pa) pb, tokens)
-astRevision (Div ta (Let pa pb), tokens) = concept (Let (Div ta pa) pb, tokens)
-astRevision (Div ta (Le  pa pb), tokens) = concept (Le  (Div ta pa) pb, tokens)
-astRevision (Div ta (Equ pa pb), tokens) = concept (Equ (Div ta pa) pb, tokens)
-astRevision (Div ta (Not pa pb), tokens) = concept (Not (Div ta pa) pb, tokens)
-astRevision (Div ta (Mod pa pb), tokens) = concept (Mod (Div ta pa) pb, tokens)
-astRevision (Div ta (Expo pa pb), tokens) = concept (Expo (Div ta pa) pb, tokens)
-astRevision (Div ta (Concat pa pb), tokens) = concept (Concat (Div ta pa) pb, tokens)
-
-astRevision (Expo ta (Add pa pb), tokens) = concept (Add (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Sub pa pb), tokens) = concept (Sub (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Mul pa pb), tokens) = concept (Mul (Expo pa ta) pb, tokens)
-astRevision (Expo ta (Div pa pb), tokens) = concept (Div (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Grt pa pb), tokens) = concept (Grt (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Ge  pa pb), tokens) = concept (Ge  (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Let pa pb), tokens) = concept (Let (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Le  pa pb), tokens) = concept (Le  (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Equ pa pb), tokens) = concept (Equ (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Not pa pb), tokens) = concept (Not (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Mod pa pb), tokens) = concept (Mod (Expo ta pa) pb, tokens)
-astRevision (Expo ta (Concat pa pb), tokens) = concept (Concat (Expo ta pa) pb, tokens)
-
-astRevision (Assign (Call (Ident f) [Tuple args]) stuffs, tokens) = (Def (Ident f) args stuffs, tokens)
-astRevision (Assign (Call (Ident f) [Parens (Ident arg)]) stuffs, tokens) = (Def (Ident f) [Ident arg] stuffs, tokens)
-
-astRevision pair = concept pair
-
-
-{-----------------------------
-           Concept
------------------------------}
-
-
-concept (Add _ (CharString _), _) = report BadMethod "You can't do math between numbers and strings" "n + \"string\""
-concept (Add (CharString _) _, _) = report BadMethod "You can't do math between numbers and strings" "\"string\" + n"
-concept (Sub _ (CharString _), _) = report BadMethod "You can't do math between numbers and strings" "n - \"string\""
-concept (Sub (CharString _) _, _) = report BadMethod "You can't do math between numbers and strings" "\"string\" - n"
-concept (Mul _ (CharString _), _) = report BadMethod "You can't do math between numbers and strings" "n * \"string\""
-concept (Mul (CharString _) _, _) = report BadMethod "You can't do math between numbers and strings" "\"string\" * n"
-concept (Div _ (CharString _), _) = report BadMethod "You can't do math between numbers and strings" "n / \"string\""
-concept (Div (CharString _) _, _) = report BadMethod "You can't do math between numbers and strings" "\"string\" / n"
-
-concept (Add _ (ComprehensionList _), _) = report BadMethod "You can't do math between numbers and strings" "n + []"
-concept (Add (ComprehensionList _) _, _) = report BadMethod "You can't do math between numbers and strings" "[] + n"
-concept (Sub _ (ComprehensionList _), _) = report BadMethod "You can't do math between numbers and strings" "n - []"
-concept (Sub (ComprehensionList _) _, _) = report BadMethod "You can't do math between numbers and strings" "[] - n"
-concept (Mul _ (ComprehensionList _), _) = report BadMethod "You can't do math between numbers and strings" "n * []"
-concept (Mul (ComprehensionList _) _, _) = report BadMethod "You can't do math between numbers and strings" "[] * n"
-concept (Div _ (ComprehensionList _), _) = report BadMethod "You can't do math between numbers and strings" "n / []"
-concept (Div (ComprehensionList _) _, _) = report BadMethod "You can't do math between numbers and strings" "[] / n"
-
-concept (Concat a (Num _), _) = report BadMethod "You can just concat lists" "[] ++ n"
-concept (Concat a (Numf _), _) = report BadMethod "You can just concat lists" "[] ++ n"
-concept (Concat (Num _) b, _) = report BadMethod "You can just concat lists" "n ++ []"
-concept (Concat (Numf _) b, _) = report BadMethod "You can just concat lists" "n ++ []"
-
-concept ast@(Assign (Decl a) (Ident b), r)
-  = if a /= b
-      then
-        ast
-      else
-        report BadMethod "I just met this variable, nor asked about its type" (showt [DECLARE, IDENT a, ASSIGN, IDENT b])
-
-concept (Assign a b, tokens)
-  = case a of
-      Num x ->
-        report BadMethod "You can't assign values to numbers" (show x ++ " = ...")
-
-      Numf x ->
-        report BadMethod "You can't assign values to numbers" (show x ++ " = ...")
-
-      _ ->
-        (Assign a b, tokens)
-
-concept ast = ast
-
-
-{-----------------------------
-   Ast to Instruction Parser
------------------------------}
-
-
-parseAst (Void) = TNothing
-parseAst (Decl x) = DeclVar x
-parseAst (Ident "_") = Ignore
-parseAst (Ident x) = PushVar x
-parseAst (CharString x) = CallFunction (PushVar "mkstr") [PushString x]
-parseAst (CharByte x) = PushChar x
-parseAst (Num x) = PushConst (show x)
-parseAst (Numf x) = PushConstf (show x ++ "f")
-parseAst (Assign e1 e2) = AssignTo (parseAst e1) (parseAst e2)
-parseAst (Take e1 e2) = DoTake (parseAst e1) (parseAst e2)
-parseAst (Expo e1 e2) = CallFunction (PushVar "pow") [parseAst e1, parseAst e2]
-parseAst (Concat e1 e2) = ConcatList (parseAst e1) (parseAst e2)
-parseAst (Import e1) = ImportInst $ (map (\x -> if x == '.' then '/' else x) e1) ++ ".hpp"
-parseAst (Negate e1) = NegateInst $ parseAst e1
-
-parseAst (Add e1 e2) = Operation "+" (parseAst e1) (parseAst e2)
-parseAst (Sub e1 e2) = Operation "-" (parseAst e1) (parseAst e2)
-parseAst (Mul e1 e2) = Operation "*" (parseAst e1) (parseAst e2)
-parseAst (Div e1 e2) = Operation "/" (parseAst e1) (parseAst e2)
-parseAst (Mod e1 e2) = Operation "%" (parseAst e1) (parseAst e2)
-parseAst (Grt e1 e2) = Operation ">" (parseAst e1) (parseAst e2)
-parseAst (Let e1 e2) = Operation "<" (parseAst e1) (parseAst e2)
-
-parseAst (Equ e1 e2) = Operation "==" (parseAst e1) (parseAst e2)
-parseAst (Not e1 e2) = Operation "!=" (parseAst e1) (parseAst e2)
-parseAst (Ge  e1 e2) = Operation ">=" (parseAst e1) (parseAst e2)
-parseAst (Le  e1 e2) = Operation "<=" (parseAst e1) (parseAst e2)
-
-parseAst (And e1 e2) = AndInst (parseAst e1) (parseAst e2)
-parseAst (Or e1 e2) = OrInst (parseAst e1) (parseAst e2)
-
-parseAst (In e1 e2) = Range (parseAst e1) (parseAst e2)
-parseAst (For e1 e2 (When e3))
-  = let
-      ranges = parseAst e2
-
-      var' = (\(Range x _) -> x) ranges
-      range' = (\(Range _ l) -> l) ranges
-      result' = parseAst e1
-      condition' = case e3 of
-                    Void -> PushConst "true"
-                    _ -> parseAst e3
-
-    in
-      ForList (Lambda [var'] result') range' (Lambda [var'] condition')
-
-parseAst (CountList e1 e2) = MakeCountList (parseAst e1) (parseAst e2)
-parseAst (ComprehensionList xs) = MakeSimpleList (map parseAst xs)
-parseAst (Parens e1) = Block (parseAst e1)
-parseAst (Def name args body) = Function (parseAst name) (map parseAst args) (parseAst body)
-parseAst (LambdaDef args body) = Lambda (map parseAst args) (parseAst body)
-parseAst (Call name args) = CallFunction (parseAst name) (map parseAst args)
-parseAst (Condition stat thenStat elseStat) = Block $ MakeCondition (parseAst stat) (parseAst thenStat) (parseAst elseStat)
-parseAst (IsEither e1 e2) = CallFunction (PushVar "elem") [parseAst e1, MakeSimpleList $ map parseAst e2]
-parseAst (IsNeither e1 e2) = Block $ CallFunction (PushVar "!elem") [parseAst e1, MakeSimpleList $ map parseAst e2]
-parseAst (DoIn e1 e2) = DoStack $ map parseAst (e1 ++ [e2])
-parseAst (Tuple e) = TupleInst $ map parseAst e
-parseAst (ListPM e1 e2) = ListPMInst (map parseAst e1) (parseAst e2)
-parseAst (Special x) = PushVar $ show x
-parseAst (Try x) = TryInst $ parseAst x
-parseAst (MatchWith a b c) = MatchInst (parseAst a) (map parseAst b) (parseAst c)
-parseAst (AsCast a (Ident t)) = Cast (parseAst a) t
-parseAst (AsCast a (ComprehensionList [Ident t])) = Cast (parseAst a) ("List<" ++ t ++ ">")
-parseAst _ = TNothing
+parser = cell . parseTokens 

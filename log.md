@@ -1,6 +1,16 @@
 Log
 ===
 
+v1.7 (Work in progress)
+-----------------------
++ Developed an interpreter;
++ Added a REPL;
++ Removed the C++ translator;
++ Remade parser for more natural programming;
++ Removed mathematic style. It'll get back soon in future version;
++ Removed implicit string concatenation. Get back in future version;
++ Removed ``as`` tool for rethink and get back in another future version;
+
 v1.6.2
 ------
 + Fixed broken templates' type;
@@ -38,13 +48,9 @@ v1.4
 + Added new way to define functions.
 + Added mathematic syntax to numbers and variables.
 
-Not yet compiled
-----------------
-Empty
-
 In working
 -----------
 + Partial application; // Scratched out.
-+ Removing the strings concatenation's bug;
 + Some ideas from mathematic. Using math in lists (matrix). // Scratched out.
-+ Byte-code Interpreter in C++.
++ Interpreter;
++ Remaking parser;

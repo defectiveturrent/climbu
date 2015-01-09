@@ -1,5 +1,7 @@
 tmp
 src/Lua.hs
 src/int
+src/OldParser.hs
+src/guide.hs
 ComplerExample.hs
 climbu
