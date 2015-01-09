@@ -267,42 +267,42 @@ parseLines xs = let (ast, EOF:r) = parse xs in ast : parseLines r
 
 ----------------------------
 
-factor :: Tokens -> Parsed Ast
+quark :: Tokens -> Parsed Ast
 
-factor (IDENT y : rest)
+quark (IDENT y : rest)
   = (Ident y, rest)
 
-factor (TRUE : rest)
+quark (TRUE : rest)
   = (Ident "True", rest)
 
-factor (FALSE : rest)
+quark (FALSE : rest)
   = (Ident "False", rest)
 
-factor (STRING str : rest)
+quark (STRING str : rest)
   = (CharString str, rest)
 
-factor (CHAR y : rest)
+quark (CHAR y : rest)
   = (CharByte y, rest)
 
-factor (CONST y : rest)
+quark (CONST y : rest)
   = (Num y, rest)
 
-factor (CONSTF y : rest)
+quark (CONSTF y : rest)
   = (Numf y, rest)
 
-factor (CALLALONE y : rest)
+quark (CALLALONE y : rest)
   = (Call (Ident y) [], rest)
 
-factor (IMPORT y : rest)
+quark (IMPORT y : rest)
   = (Import y, rest)
 
-factor (OPENLIST : CLOSELIST : rest)
+quark (OPENLIST : CLOSELIST : rest)
   = (ComprehensionList [], rest)
 
-factor (OPENPAREN : CLOSEPAREN : rest)
+quark (OPENPAREN : CLOSEPAREN : rest)
   = (Tuple [], rest)
 
-factor (OPENLIST : rest)
+quark (OPENLIST : rest)
   = let
       sub stack (ast, COUNTLIST:xs)
         = let
@@ -315,7 +315,7 @@ factor (OPENLIST : rest)
     in
       sub [] $ parse rest
 
-factor (OPENPAREN : xs)
+quark (OPENPAREN : xs)
   = let
       sub (y, CLOSEPAREN:ys)
         = case y of
@@ -331,27 +331,27 @@ factor (OPENPAREN : xs)
       in
         sub $ parse xs
 
--- factor _ = error "Unbelievably, this abstract syntax tree is not part of my knowledge"
-factor _ = (Void, [EOF])
+-- quark _ = error "Unbelievably, this abstract syntax tree is not part of my knowledge"
+quark _ = (Void, [EOF])
 
 ----------------------------
 
 ----------------------------
 
-quark :: Tokens -> Parsed Ast
+electron :: Tokens -> Parsed Ast
 
-quark (MINUS : tokens)
+electron (MINUS : tokens)
   = let
-      (x, xs) = quark tokens
+      (x, xs) = electron tokens
     in
       (Negate x, xs)
 
-quark tokens@(IDENT y : ys)
+electron tokens@(IDENT y : ys)
   = let
       fold stack [] = (stack, [])
       fold stack tokens
         = let
-            (w, ws) = factor tokens
+            (w, ws) = quark tokens
           in
             if w /= Void
               then
@@ -362,10 +362,10 @@ quark tokens@(IDENT y : ys)
       (z, zs) = fold [] ys
     in
       case z of
-        [] -> factor tokens
+        [] -> quark tokens
         _  -> (Call (Ident y) z, zs)
 
-quark tokens = factor tokens
+electron tokens = quark tokens
 
 ----------------------------
 
@@ -375,7 +375,7 @@ proton :: Tokens -> Parsed Ast
 
 proton tokens
   = let
-      (x, xs) = quark tokens
+      (x, xs) = electron tokens
     in
       case xs of
         (MUL : ys) ->
@@ -585,7 +585,7 @@ human tokens
   = let
       sub (Ident foo, xs)
         = let
-            (y, ys) = factor xs
+            (y, ys) = quark xs
           in
             case (y, ys) of
               (Tuple z, ASSIGN : zs) -> (Def (Ident foo) z body, rest)
@@ -598,7 +598,7 @@ human tokens
       sub _ = cell tokens
 
     in
-      sub $ factor tokens
+      sub $ quark tokens
 
 ----------------------------
 
