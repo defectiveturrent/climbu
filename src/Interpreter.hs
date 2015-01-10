@@ -9,6 +9,12 @@ import Parser
 import Data.ByteString (ByteString)
 import Data.ByteString.Char8 (pack, unpack)
 
+-- TODO:
+--
+-- + Concatenation between identifiers
+-- + lambda
+-- + Tupla
+
 readString :: String -> [Ast]
 readString str = read str :: [Ast]
 
@@ -44,15 +50,17 @@ data Type
   | BOOL
   | LIST Type
   | TUPLE [Type]
-  | FUNCTION Type
+  | FUNCTION
+  | LAMBDA
   | GENERIC
-  deriving(Eq)
+  deriving(Eq, Read)
 
 data Chunk = Chunk ByteString Type
            | List [Chunk] Type
            | Tuplec [Chunk] Type
            | Declaration Chunk Chunk Type
            | Functionc ByteString [Ast] Ast
+           | Lambdac [Ast] Ast
            | Callf Chunk
            deriving (Eq)
 
@@ -65,7 +73,8 @@ typeof (Chunk _ t) = t
 typeof (List _ t) = t
 typeof (Tuplec _ t) = t
 typeof (Declaration _ _ t) = t
-typeof (Functionc _ _ _) = FUNCTION GENERIC
+typeof (Functionc _ _ _) = FUNCTION
+typeof (Lambdac _ _) = LAMBDA
 
 {--------------------------
   Don't look here,
@@ -79,15 +88,17 @@ instance Show Type where
   show BOOL = "Bool"
   show (LIST r) = "[" ++ show r ++ "]"
   show (TUPLE r) = "(" ++ intercalate "," (map show r) ++ ")"
-  show (FUNCTION r) = "Function -> " ++ show r
-  show GENERIC = "generic"
+  show FUNCTION = "Function"
+  show LAMBDA = "Lambda"
+  show GENERIC = "Generic"
 
 instance Show Chunk where
   show chunk@(Chunk _ t) = showChunk chunk ++ " :: " ++ show t
   show list@(List _ t) = showChunk list ++ " :: " ++ show t
   show tuple@(Tuplec _ t) = showChunk tuple ++ " :: " ++ show t
   show decl@(Declaration _ _ t) = showChunk decl ++ " :: " ++ show t
-  show func@(Functionc _ _ _) = showChunk func ++ " :: " ++ show (FUNCTION GENERIC)
+  show func@(Functionc _ _ _) = showChunk func ++ " :: " ++ show FUNCTION
+  show lambda@(Lambdac _ _) = showChunk lambda ++ " :: " ++ show LAMBDA
 
 showChunk (Chunk bs _) = unpack bs
 
@@ -110,6 +121,8 @@ showChunk (Declaration var chunk _)
   = showChunk var ++ " = " ++ showChunk chunk
 
 showChunk (Functionc fnname args _) = unpack fnname ++ " " ++ intercalate " " (map (\(Ident x) -> x) args)
+
+showChunk (Lambdac args _) = "~(" ++ intercalate " " (map (\(Ident x) -> x) args) ++ ")"
 
 {--------------------------
   Okay, you
@@ -135,6 +148,7 @@ literaleval (CountList (Ident "True") (Ident "False")) = ComprehensionList [Iden
 literaleval (CountList (Ident "False") (Ident "True")) = ComprehensionList [Ident "False", Ident "True"]
 literaleval (CharString xs) = ComprehensionList $ map CharByte xs
 literaleval comp@(ComprehensionList xs) = comp
+literaleval x = x
 
 test = (evaluate [] . fst . parser $!)
 
@@ -332,11 +346,31 @@ evaluate stack
             apply xt yt
 
       eval (Concat a b)
-        = let
-            (ComprehensionList x) = literaleval a
-            (ComprehensionList y) = literaleval b
-          in
-            eval . ComprehensionList $ x ++ y
+        = case (literaleval a, literaleval b) of
+            (ComprehensionList x, ComprehensionList y) ->
+              eval . ComprehensionList $ x ++ y
+
+            (ComprehensionList x, Ident y) ->
+              let
+                (List listx t) = eval $ ComprehensionList x
+                (List listy _) = getFromStack y stack
+              in
+                List (listx ++ listy) t
+
+            (Ident x, ComprehensionList y) ->
+              let
+                (List listx t) = getFromStack x stack
+                (List listy _) = eval $ ComprehensionList y
+              in
+                List (listx ++ listy) t
+
+            _ ->
+              let
+                (List listx t) = evaluate stack a
+                (List listy _) = evaluate stack b
+              in
+                List (listx ++ listy) t
+
 
       eval comp@(ComprehensionList xs)
         = let
@@ -375,7 +409,7 @@ evaluate stack
           in
             if readb (unpack stat') then eval right else eval wrong
 
-      eval for@(For what (In (Ident n) list) (Void))
+      eval for@(For what (In (Ident n) list) Void)
         = let
             checkList
               = case list of
@@ -400,11 +434,24 @@ evaluate stack
         = Functionc (pack fnname) args body
 
       eval (Call (Ident fnname) args)
+        = case getFromStack fnname stack of
+              (Functionc _ args' body') -> 
+                let
+                  setLocals = map eval $ zipWith (\i@(Ident n) what -> Assign i what) args' args
+                in
+                  evaluate (setLocals ++ stack) body'
+
+              (Lambdac args' body') ->
+                let
+                  setLocals = map eval $ zipWith (\i@(Ident n) what -> Assign i what) args' args
+                in
+                  evaluate (setLocals ++ stack) body'
+
+      eval (Call (LambdaDef lambArgs body) args)
         = let
-            (Functionc _ args' body') = getFromStack fnname stack
-            setLocals = map eval $ zipWith (\i@(Ident n) what -> Assign i what) args' args
+            setLocals = map eval $ zipWith (\i@(Ident n) what -> Assign i what) lambArgs args
           in
-            evaluate (setLocals ++ stack) body'
+            evaluate (setLocals ++ stack) body
 
       eval (DoIn asts result)
         = let
@@ -413,7 +460,10 @@ evaluate stack
 
             s = sub [] asts
           in
-            evaluate (s ++ stack) result -- FIXIT
+            evaluate (s ++ stack) result
+
+      eval (LambdaDef args body)
+        = Lambdac args body
 
 
       eval ast = error $ "Unknown Ast: " ++ show ast

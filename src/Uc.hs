@@ -114,6 +114,7 @@ help _
 repl _
   = do
       version [""]
+      putStrLn "To exit, press CTRL + D\n"
       let
         hError :: [Chunk] -> Exc.ErrorCall -> IO ()
         hError stack exception
@@ -134,11 +135,14 @@ repl _
               Exc.catch (print interpreted) $ hError stack
 
               let
-                new = interpreted : stack
+                new = nub $ case interpreted of
+                        Chunk _ _ -> stack
+                        _ -> interpreted : stack
 
               putStrLn []
               sub $ case head new of
                 (Declaration (Chunk n _) _ _) -> head new : removeIdent n (tail new)
+                (Functionc n _ _) -> head new : removeIdent n (tail new)
                 _ -> new
       
       sub []

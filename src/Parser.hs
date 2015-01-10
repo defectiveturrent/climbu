@@ -549,7 +549,7 @@ cell tokens
 
         (ASSIGN : ys) ->
           let
-            (z, zs) = cell ys
+            (z, zs) = human ys
           in
             (Assign x z, zs)
 
@@ -580,6 +580,15 @@ cell tokens
 ----------------------------
 
 ----------------------------
+
+human :: Tokens -> Parsed Ast
+
+human (LAMBDA : tokens)
+  = let
+      (Tuple x, RARROW:xs) = quark tokens
+      (y, ys) = human xs
+    in
+      (LambdaDef x y, ys)
 
 human tokens
   = let
