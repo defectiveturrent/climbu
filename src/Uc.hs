@@ -87,21 +87,7 @@ interpret (line:_)
       return ()
 
 interpret (file:_)
-  = do
-      let
-        hError :: [Chunk] -> Exc.ErrorCall -> IO ()
-        hError exception
-          = do putStrLn $ show exception
-               putStrLn []
-
-        sub stack
-          = do source <- readFile file
-               let 
-                   interpreted = evaluate stack (getAst line)
-
-               Exc.catch (print interpreted) hError
-      
-      sub []
+  = return ()
 
 version _
   = do
