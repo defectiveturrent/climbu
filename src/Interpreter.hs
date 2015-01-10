@@ -31,16 +31,12 @@ openBytecode path
 
 {-
   | Take Ast Ast                       -- list take n
-  | Tuple [Ast]                        -- (a, 7, "hello")
-  | LambdaDef [Ast] Ast                -- LambdaDef [ARGS] BODY // {n = n + foo}
   | IsEither Ast [Ast]                 -- n in either 1 2 3
   | IsNeither Ast [Ast]                 -- n in either 1 2 3
   | DoIn [Ast] Ast                     -- An expression that allows to make more expressions on a single block
   | Import String                      -- To import a library
   | ListPM [Ast] Ast                   -- A list's pattern matching operator (:) ( [Head] Tail )
   | AsCast Ast Ast                     --
-  | Void                               -- Used to stuff something empty
-  | Eof                                -- used to end a complete expression
   -}
 
 data Type
@@ -371,6 +367,8 @@ evaluate stack
               in
                 List (listx ++ listy) t
 
+      eval (ComprehensionList [])
+        = List [] $ LIST GENERIC
 
       eval comp@(ComprehensionList xs)
         = let
@@ -464,6 +462,12 @@ evaluate stack
 
       eval (LambdaDef args body)
         = Lambdac args body
+
+      eval (Tuple x)
+        = let
+            elems = map (evaluate stack) x
+          in
+            Tuplec elems (TUPLE $ map typeof elems)
 
 
       eval ast = error $ "Unknown Ast: " ++ show ast

@@ -177,8 +177,7 @@ tokenize (x:xs) | x `elem` whitespaces      = tokenize xs
                         ")" -> CLOSEPAREN
                         "[" -> OPENLIST
                         "]" -> CLOSELIST
-                        "!" -> EXCLAMATION
-                        "~" -> LAMBDA) : tokenize ds
+                        "!" -> EXCLAMATION) : tokenize ds
 
                   doOperator stack (d:ds)
                     = if d `elem` operators
@@ -583,13 +582,6 @@ cell tokens
 
 human :: Tokens -> Parsed Ast
 
-human (LAMBDA : tokens)
-  = let
-      (Tuple x, RARROW:xs) = quark tokens
-      (y, ys) = human xs
-    in
-      (LambdaDef x y, ys)
-
 human tokens
   = let
       sub (Ident foo, xs)
@@ -603,6 +595,12 @@ human tokens
 
               _ ->
                 cell tokens
+
+      sub (Tuple x, RARROW:xs)
+        = let
+            (y, ys) = human xs
+          in
+            (LambdaDef x y, ys)
 
       sub _ = cell tokens
 

@@ -86,6 +86,23 @@ interpret (line:_)
       hFlush stdout
       return ()
 
+interpret (file:_)
+  = do
+      let
+        hError :: [Chunk] -> Exc.ErrorCall -> IO ()
+        hError exception
+          = do putStrLn $ show exception
+               putStrLn []
+
+        sub stack
+          = do source <- readFile file
+               let 
+                   interpreted = evaluate stack (getAst line)
+
+               Exc.catch (print interpreted) hError
+      
+      sub []
+
 version _
   = do
       putStrLn "Climbu compiler v1.7 (The seventh seal is opened) - Copyright (C) 2014 - 2015  Mario Feroldi"
@@ -132,7 +149,7 @@ repl _
               let
                 interpreted = evaluate stack (getAst line)
 
-              Exc.catch (print interpreted) $ hError stack
+              Exc.catch (print interpreted) (hError stack)
 
               let
                 new = nub $ case interpreted of
