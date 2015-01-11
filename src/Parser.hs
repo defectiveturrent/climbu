@@ -35,7 +35,7 @@ import Ast
     String Revision
 -----------------------------}
 
-stringRevision [] = ";"
+stringRevision [] = []
 stringRevision ('.':'.':'.':rest) = " ... " ++ stringRevision rest
 stringRevision ('.':'.':rest) = " .. " ++ stringRevision rest
 stringRevision (x:xs) = x : stringRevision xs
@@ -223,32 +223,9 @@ tokenAdjustments (IDENT n:EXCLAMATION:rest)
 tokenAdjustments (x:xs)
   = x : tokenAdjustments xs
 
-tokenRevision :: Tokens -> Tokens
-tokenRevision [] = []
-
-tokenRevision (LAMBDA:rest)
-  = let
-      (body, rest2) = break (==RARROW) rest
-    in
-      LAMBDA : body ++ tokenRevision rest2
-
-tokenRevision (ISEITHER:rest)
-  = let
-      (body, rest2) = break (==THEN) rest
-    in
-      ISEITHER : body ++ tokenRevision rest2
-
-tokenRevision (ISNEITHER:rest)
-  = let
-      (body, rest2) = break (==THEN) rest
-    in
-      ISNEITHER : body ++ tokenRevision rest2
-
-tokenRevision (x:rest) = x : tokenRevision rest
-
 parseTokens :: String -> Tokens
 parseTokens
-  = tokenRevision . tokenAdjustments . tokenize . stringRevision
+  = tokenAdjustments . tokenize . stringRevision
 
 {-----------------------------
       Token to Ast Parser
@@ -330,7 +307,7 @@ quark (OPENPAREN : xs)
       in
         sub $ parse xs
 
--- quark _ = error "Unbelievably, this abstract syntax tree is not part of my knowledge"
+--quark _ = error "Unbelievably, this abstract syntax tree is not part of my knowledge"
 quark _ = (Void, [EOF])
 
 ----------------------------

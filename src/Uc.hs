@@ -25,13 +25,13 @@ import System.Process
 import Data.Char
 import Data.Maybe
 import Data.List
+import Data.String.Utils
 import Expressions
 import Parser
 import Interpreter
 import qualified Control.Exception as Exc
 
-main = do hSetBuffering stdin LineBuffering
-          toTry `catch` handler
+main = toTry `catch` handler
 
 catch = catchIOError
 
@@ -82,12 +82,10 @@ interpret (line:_)
       let hError :: Exc.ErrorCall -> IO ()
           hError exception = putStrLn $ show exception
 
-      Exc.catch (print $ evaluate [] (getAst line)) hError
-      hFlush stdout
-      return ()
+      source <- readFile line
 
-interpret (file:_)
-  = return ()
+      Exc.catch (animated $ foldl (\acc x -> evaluate acc x : acc) [] (parseLines $ parseTokens source)) hError
+      return ()
 
 version _
   = do
@@ -148,4 +146,21 @@ repl _
                 (Functionc n _ _) -> head new : removeIdent n (tail new)
                 _ -> new
       
-      sub []
+      sub $ foldl (\acc x -> evaluate acc (getAst x) : acc) [] standard
+
+
+standard
+ = [ "iwanttobelieve = \"HAIL OUR SAVIOR, THE FLYING SPAGHETTI MONSTER!!!\";"
+   , "exit() = \"I want you to stay here.\";"
+   , "abs(x) = if x > 0 then x else -x;"
+   , "fac(x) = if x < 2 then x else x * fac (x - 1);"
+   ]
+
+animated [] = return ()
+
+animated (i@(Chunk _ _):stack)
+  = do
+      putStrLn $ show i
+      animated stack
+
+animated (x:stack) = do putStrLn $ " -> " ++ show x; animated stack

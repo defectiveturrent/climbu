@@ -7,4 +7,4 @@ SOURCE = $(SRC_DIR)/Uc $(SRC_DIR)/Expressions $(SRC_DIR)/Token $(SRC_DIR)/Ast $(
 
 
 all:
-	$(GHC) $(GHC_FLAGS) $(GHC_OPS) $(SOURCE) $(GHC_HIOFILES)
+	$(GHC) $(GHC_FLAGS) $(GHC_OPTS) $(SOURCE) $(GHC_HIOFILES)
