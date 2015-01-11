@@ -1,7 +1,7 @@
 Log
 ===
 
-v1.7 (Work in progress)
+v1.7
 -----------------------
 + Developed an interpreter;
 + Added a REPL;
