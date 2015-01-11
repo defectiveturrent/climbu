@@ -10,6 +10,12 @@ v1.7 (Work in progress)
 + Removed mathematic style. It'll get back soon in future version;
 + Removed implicit string concatenation. Get back in future version;
 + Removed ``as`` tool for rethink and get back in another future version;
++ Interpreter:
+  - Added lists;
+  - Added tuples;
+  - Added saving declarators;
++ Remade parser:
+  - New way of parsing precedences;
 
 v1.6.2
 ------
@@ -52,5 +58,3 @@ In working
 -----------
 + Partial application; // Scratched out.
 + Some ideas from mathematic. Using math in lists (matrix). // Scratched out.
-+ Interpreter;
-+ Remaking parser;
