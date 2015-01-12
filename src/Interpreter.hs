@@ -57,7 +57,7 @@ data Chunk = Chunk ByteString Type
            | Declaration Chunk Chunk Type
            | Functionc ByteString [Ast] Ast
            | Lambdac [Ast] Ast
-           | Callf Chunk
+           | Callf [Chunk] Chunk -- for omitting arguments on a function call (Assigned Function)
            deriving (Eq)
 
 value (Chunk bs _) = unpack bs
@@ -89,12 +89,13 @@ instance Show Type where
   show GENERIC = "Generic"
 
 instance Show Chunk where
-  show chunk@(Chunk _ t) = showChunk chunk ++ " :: " ++ show t
-  show list@(List _ t) = showChunk list ++ " :: " ++ show t
-  show tuple@(Tuplec _ t) = showChunk tuple ++ " :: " ++ show t
-  show decl@(Declaration _ _ t) = showChunk decl ++ " :: " ++ show t
-  show func@(Functionc _ _ _) = showChunk func ++ " :: " ++ show FUNCTION
-  show lambda@(Lambdac _ _) = showChunk lambda ++ " :: " ++ show LAMBDA
+  show chunk@(Chunk _ t) = showChunk chunk
+  show list@(List _ t) = showChunk list
+  show tuple@(Tuplec _ t) = showChunk tuple
+  show decl@(Declaration _ _ t) = showChunk decl
+  show func@(Functionc _ _ _) = showChunk func
+  show lambda@(Lambdac _ _) = showChunk lambda
+  show callf@(Callf _ _) = showChunk callf
 
 showChunk (Chunk bs _) = unpack bs
 
@@ -119,6 +120,8 @@ showChunk (Declaration var chunk _)
 showChunk (Functionc fnname args _) = unpack fnname ++ " " ++ intercalate " " (map (\(Ident x) -> x) args)
 
 showChunk (Lambdac args _) = "~(" ++ intercalate " " (map (\(Ident x) -> x) args) ++ ")"
+
+showChunk (Callf _ fn) = "stacked " ++ show fn
 
 {--------------------------
   Okay, you
@@ -433,11 +436,20 @@ evaluate stack
 
       eval (Call (Ident fnname) args)
         = case getFromStack fnname stack of
-              (Functionc _ args' body') -> 
+              (Functionc n args' body') -> 
                 let
-                  setLocals = map eval $ zipWith (\i@(Ident n) what -> Assign i what) args' args
+                  zipped = zipWith (\i@(Ident n) what -> Assign i what) args' args
+                  setLocals = map eval zipped
+
+                  inputArgsLen = length args
+                  funcArgsLen = length args'
+                  omittedArgs = drop (funcArgsLen - inputArgsLen) args'
                 in
-                  evaluate (setLocals ++ stack) body'
+                  if funcArgsLen > inputArgsLen
+                    then
+                      evaluate stack (LambdaDef omittedArgs (DoIn zipped body'))
+                    else
+                      evaluate (setLocals ++ stack) body'
 
               (Lambdac args' body') ->
                 let
@@ -468,6 +480,5 @@ evaluate stack
             elems = map (evaluate stack) x
           in
             Tuplec elems (TUPLE $ map typeof elems)
-
 
       eval ast = error $ "Unknown Ast: " ++ show ast

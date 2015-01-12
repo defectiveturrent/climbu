@@ -1,6 +1,6 @@
 {-
     Climbu compiler / interpreter
-    Copyright (C) 2014  Mario Feroldi
+    Copyright (C) 2014 - 2015 Mario Feroldi
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

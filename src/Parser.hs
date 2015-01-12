@@ -35,7 +35,8 @@ import Ast
     String Revision
 -----------------------------}
 
-stringRevision [] = []
+stringRevision [] = ";"
+stringRevision ";" = ";"
 stringRevision ('.':'.':'.':rest) = " ... " ++ stringRevision rest
 stringRevision ('.':'.':rest) = " .. " ++ stringRevision rest
 stringRevision (x:xs) = x : stringRevision xs
