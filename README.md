@@ -14,7 +14,7 @@ Well, when I say 'super side effect', I actually mean this:
 
     do x = bar 2,
        foo = 2
-    in bar + foo;
+    in x + foo;
 ```
 
 Yeap, this prints ``5``. Okay, until now, this isn't too side effect, is it? Yeah, is not. But check it out:
