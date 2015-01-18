@@ -26,7 +26,7 @@ Yeap, this prints ``5``. Okay, until now, this isn't too side effect, is it? Yea
 
     foo (do bar(x) = x in bar); -- returns 2
 
-    foo bar 4; -- returns 6
+    foo bar; -- returns 6
 
     bar = 8; -- bar now is 8
 ```
