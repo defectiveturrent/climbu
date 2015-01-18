@@ -48,9 +48,6 @@ Okay, okay, not too side effect... And now, it comes hard:
 
 Wow! Do we just made... Declarators? Yes, we made it. It's too much complex for explainations here. Go to the doc and check it out!
 
-## Documentation?
-It's coming yet. Not finished. However, you can see the progress here: [Climbu documentation](http://climbu.readthedocs.org/en/latest/)
-
 ## The versions
 Climbu has named versions (since v1.3) where the first named version is "I'm a zygote". This is just for fun. You can find all versions in the ``versions`` file.
 
