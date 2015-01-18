@@ -102,14 +102,6 @@ version _
       putStrLn "This is free software, and you are welcome to redistribute it"
       putStrLn "under GPL v3 license.\n"
 
-help ("-c":_)
-  = do
-      putStrLn "COMPILE <binary name> <source/file>"
-      putStrLn "\n   This command compiles a source or file to an executable binary file."
-      putStrLn "\n     For example:"
-      putStrLn "        climbu -c test source.cm"
-      putStrLn "\n To see more, type --help."
-
 help _
   = do
       putStrLn "Usage: climbu [option] file...\n"

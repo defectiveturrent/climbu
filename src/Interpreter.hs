@@ -9,13 +9,25 @@ import Parser
 import Data.ByteString (ByteString)
 import Data.ByteString.Char8 (pack, unpack)
 
--- TODO:
---
--- + Concatenation between identifiers
--- + lambda
--- + Tupla
-
 readString :: String -> [Ast]
+{-
+    Climbu compiler / interpreter
+    Copyright (C) 2014 - 2015 Mario Feroldi
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-}
+
 readString str = read str :: [Ast]
 
 saveBytecode :: [Ast] -> String -> IO ()
@@ -28,16 +40,6 @@ openBytecode path
   = do
     s <- readFile path
     return $ readString s
-
-{-
-  | Take Ast Ast                       -- list take n
-  | IsEither Ast [Ast]                 -- n in either 1 2 3
-  | IsNeither Ast [Ast]                 -- n in either 1 2 3
-  | DoIn [Ast] Ast                     -- An expression that allows to make more expressions on a single block
-  | Import String                      -- To import a library
-  | ListPM [Ast] Ast                   -- A list's pattern matching operator (:) ( [Head] Tail )
-  | AsCast Ast Ast                     --
-  -}
 
 data Type
   = INT
