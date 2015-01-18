@@ -6,7 +6,7 @@ Climbu is interpreted (and maybe it's fast, I don't know). Climbu is a super sid
 
 Well, when I say 'super side effect', I actually mean this:
 
- .. code-block:: haskell
+ .. code-block:: c++
     foo(a, b) = a + b;
 
     bar = foo 1;
@@ -17,7 +17,7 @@ Well, when I say 'super side effect', I actually mean this:
 
 Yeap, this prints ``5``. Okay, until now, this isn't too side effect, is it? Yeah, is not. But check it out:
 
- .. code-block:: haskell
+ .. code-block:: c++
     foo(x) = x 2;
 
     bar(x) = x + 2;
@@ -30,7 +30,7 @@ Yeap, this prints ``5``. Okay, until now, this isn't too side effect, is it? Yea
 
 Okay, okay, not too side effect... And now, it comes hard:
 
- .. code-block:: haskell
+ .. code-block:: c++
     foo1 = foo(x) = x + x;
     foo2 = foo(x) = x / 2;
 
