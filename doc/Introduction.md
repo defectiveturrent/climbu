@@ -1,18 +1,13 @@
-Meeting Climbu
-***************
+### Meeting Climbu
 
-Hello, Climbu. What are you?
-----------------------------
+## Hello, Climbu. What are you?
 Good question. Climbu is a programming language, which is focusing in the result, not in speed or something else. So you can (you should) use Climbu just for testing mathematics' formules, testing algoritms and other cool stuffs.
 
 Climbu is interpreted (and maybe it's fast, I don't know). Climbu is a super side effect, imperative programming language, but it can be just functional programming language, you choose your form.
 
-Well, when I say Albertoo,eu ja falei,todos nós ja falamos :
-PARA COM MENSAGENS INÚTEIS PORRA.
-Isso é chato,até hoje,eu n vi NENHUMA mensagem sua que não fosse nonsense ou inútil.
-NABOA cara,para com isso.'super side effect', I actually mean this:
+Well, when I say 'super side effect', I actually mean this:
 
- .. code-block:: c++
+``` haskell
     foo(a, b) = a + b;
 
     bar = foo 1;
@@ -20,10 +15,11 @@ NABOA cara,para com isso.'super side effect', I actually mean this:
     do x = bar 2,
        foo = 2
     in x + foo;
+```
 
 Yeap, this prints ``5``. Okay, until now, this isn't too side effect, is it? Yeah, is not. But check it out:
 
- .. code-block:: c++
+``` haskell
     foo(x) = x 2;
 
     bar(x) = x + 2;
@@ -33,10 +29,11 @@ Yeap, this prints ``5``. Okay, until now, this isn't too side effect, is it? Yea
     foo bar; -- returns 4
 
     bar = 8; -- bar now is 8
+```
 
 Okay, okay, not too side effect... And now, it comes hard:
 
- .. code-block:: c++
+``` haskell
     foo1 = foo(x) = x + x;
     foo2 = foo(x) = x / 2;
 
@@ -46,13 +43,12 @@ Okay, okay, not too side effect... And now, it comes hard:
        y = foo 4
 
      in (x, y) -- prints (8, 2)
+```
 
 Wow! Do we just made... Declarators? Yes, we made it. It's too much complex for explainations here. Go through the doc for learn more!
 
-The versions
-------------
+## The versions
 Climbu has named versions (since v1.3) where the first named version is "I'm a zygote". This is just for fun. You can find all versions in the ``versions`` file.
 
-The license
------------
+## The license
 This project is lincensed under GPLv3, so you are free to do everything (or almost everything) with my language.
