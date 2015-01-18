@@ -1,10 +1,16 @@
-What is this?
--------------
+Meeting Climbu
+***************
+
+Hello, Climbu. What are you?
+----------------------------
 Good question. Climbu is a programming language, which is focusing in the result, not in speed or something else. So you can (you should) use Climbu just for testing mathematics' formules, testing algoritms and other cool stuffs.
 
 Climbu is interpreted (and maybe it's fast, I don't know). Climbu is a super side effect, imperative programming language, but it can be just functional programming language, you choose your form.
 
-Well, when I say 'super side effect', I actually mean this:
+Well, when I say Albertoo,eu ja falei,todos nós ja falamos :
+PARA COM MENSAGENS INÚTEIS PORRA.
+Isso é chato,até hoje,eu n vi NENHUMA mensagem sua que não fosse nonsense ou inútil.
+NABOA cara,para com isso.'super side effect', I actually mean this:
 
  .. code-block:: c++
     foo(a, b) = a + b;
