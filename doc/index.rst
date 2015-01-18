@@ -5,4 +5,3 @@ Climbu Documentation
    :maxdepth: 2
 
    Introduction
-   Get started

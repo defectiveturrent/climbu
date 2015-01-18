@@ -1,4 +1,5 @@
-## What is this?
+What is this?
+-------------
 Good question. Climbu is a programming language, which is focusing in the result, not in speed or something else. So you can (you should) use Climbu just for testing mathematics' formules, testing algoritms and other cool stuffs.
 
 Climbu is interpreted (and maybe it's fast, I don't know). Climbu is a super side effect, imperative programming language, but it can be just functional programming language, you choose your form.
@@ -42,8 +43,10 @@ Okay, okay, not too side effect... And now, it comes hard:
 
 Wow! Do we just made... Declarators? Yes, we made it. It's too much complex for explainations here. Go through the doc for learn more!
 
-## The versions
+The versions
+------------
 Climbu has named versions (since v1.3) where the first named version is "I'm a zygote". This is just for fun. You can find all versions in the ``versions`` file.
 
-## The license
+The license
+-----------
 This project is lincensed under GPLv3, so you are free to do everything (or almost everything) with my language.
