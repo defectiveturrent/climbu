@@ -3,6 +3,7 @@ src/Lua.hs
 src/int
 src/OldParser.hs
 src/guide.hs
+doc_
 include_hide
 ComplerExample.hs
 climbu
