@@ -1,69 +1,49 @@
-Climbu
-******
-Introduction
-------------
-So, what is Climbu? You can say: "Oh, it might be just another programming language, baah, nothing important." But I say to you: "No!! Okay, it's just another programming language, but it's different." How can it be different from others languages? The Climbu is different because it is not compiled or interpreted, it's Converted.
+## What is this?
+Good question. Climbu is a programming language, which is focusing in the result, not in speed or something else. So you can (you should) use Climbu just for testing mathematics' formules, testing algoritms and other cool stuffs.
 
-What? Converted? Be more specific!
-++++++++++++++++++++++++++++++++++
-Yeah, it's converted. The Climbu's code, when passing by compiler, is converted to an C++ code, and finally compiled. And, again, you say: "Oh, C++? This language is so powerful..." I did think the same.
+Climbu is interpreted (and maybe it's fast, I don't know). Climbu is a super side effect, imperative programming language, but it can be just functional programming language, you choose your form.
 
-Why are you making this language?
-+++++++++++++++++++++++++++++++++
-I like to teach a lot of nice guys around. But it's complex for him, because it I'm making this language, just for teaching easy (And for when I be tired to program in C++ (serious)).
+Well, when I say 'super side effect', I actually mean this:
 
-Okay, let's see it
-++++++++++++++++++
-All high-level programming languages are quite easy to learn. The most simple expressions are converted to a very complex C++ code. Let's say you want to write a generic function. Not too complex, just a little function for some data management. Using C++ you can write a quite verbose code. Meanwhile, to write the same in climbu is very simple.
+ .. code-block:: haskell
+    foo(a, b) = a + b;
 
-Ok, taking an exemple: I want a function that plus two elements (generic).
+    bar = foo 1;
 
-.. code-block:: c++
+    do x = bar 2,
+       foo = 2
+    in x + foo;
 
-    template<class T> T plus(T a, T b)
-    {
-        return a + b;
-    }
+Yeap, this prints ``5``. Okay, until now, this isn't too side effect, is it? Yeah, is not. But check it out:
 
+ .. code-block:: haskell
+    foo(x) = x 2;
 
-Hmmm... Ok. Now, let's do the same using climbu:
+    bar(x) = x + 2;
 
-.. code-block:: c++
+    foo (do bar(x) = x in bar); -- returns 2
 
-    plus(a, b) = a + b;
+    foo bar; -- returns 4
 
+    bar = 8; -- bar now is 8
 
-Wow, it's fantastic! And note that this little easy code is converted to that big C++ code. The power is the same. Now look how I make a factorial function in both languages:
+Okay, okay, not too side effect... And now, it comes hard:
 
-.. code-block:: c++
+ .. code-block:: haskell
+    foo1 = foo(x) = x + x;
+    foo2 = foo(x) = x / 2;
 
-    int factorial(int n)
-    {
-        if( n <= 0 )
-            return 1;
+    do foo1,
+       x = foo 4,
+       foo2,
+       y = foo 4
 
-        return n * factorial(n - 1);
-    }
+     in (x, y) -- prints (8, 2)
 
+Wow! Do we just made... Declarators? Yes, we made it. It's too much complex for explainations here. Go through the doc for learn more!
 
-Climbu:
+## The versions
+Climbu has named versions (since v1.3) where the first named version is "I'm a zygote". This is just for fun. You can find all versions in the ``versions`` file.
 
-.. code-block:: c++
-
-    factorial(n) = if n <= 0
-        then 1
-        else n * factorial . n - 1;
-
-But Climbu is not 
-
-The versions
-++++++++++++
-Climbu has named versions (since v1.3) where the first named version is "I'm a zygote". This is just for fun.
-
-You need to read this
-+++++++++++++++++++++
-Well, at first, climbu wore the GNU/g++ compiler. Now it uses the clang compiler. Why? I think clang is better for this, and I like clang. So, to run climbu, you need to install clang in your computer. I know that clang is cross-platform, so it's good! You can install it in your linux or windows (I don't know about MacOS). Anyway, you can find clang here: http://clang.llvm.org .
-
-The license
-+++++++++++
+## The license
 This project is lincensed under GPLv3, so you are free to do everything (or almost everything) with my language.
