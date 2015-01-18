@@ -1,5 +1,5 @@
-Climbu
-=======
+#### Climbu
+
 ## What is this?
 Good question. Climbu is a programming language, which is focusing in the result, not in speed or something else. So you can (you should) use Climbu just for testing mathematics' formules, testing algoritms and other cool stuffs.
 
