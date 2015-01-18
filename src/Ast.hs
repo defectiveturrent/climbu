@@ -57,7 +57,7 @@ data Ast
   | For Ast Ast Ast                    -- Specific comprehension list
   | DoIn [Ast] Ast                     -- An expression that allows to make more expressions on a single block
   | Import String                      -- To import a library
-  | ListPM [Ast] Ast                   -- A list's pattern matching operator (:) ( [Head] Tail )
+  | Unlist [Ast]                       -- A list's pattern matching operator (:) ( [Head] Tail )
   | Negate Ast                         --
   | AsCast Ast Ast                     --
   | Void                               -- Used to stuff something empty

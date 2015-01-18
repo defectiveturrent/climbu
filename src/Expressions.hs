@@ -1,6 +1,6 @@
 {-
     Climbu compiler / interpreter
-    Copyright (C) 2014  Mario Feroldi
+    Copyright (C) 2014 - 2015  Mario Feroldi
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,56 +23,6 @@ import Token
 import Ast
 import ErrorHandler
 
--- A set of all expression's limiters
-eofers
-  = [ CLOSEPAREN
-    , RARROW
-    , LARROW
-    , CLOSELIST
-    , DECLARE -- I don't know the reason, but it's crashing the do-in expression
-    , COUNTLIST
-    , IF
-    , THEN
-    , ELSE
-    , AND
-    , OR
-    , TRUE
-    , FALSE
-    , DO
-    , FOR
-    , IN
-    , WHEN
-    , COMPOSITION
-    , COMMA
-    , COMMENT
-    , LISTPATTERNMATCHING
-    , PLUS
-    , MINUS
-    , MUL
-    , DIV
-    , GRTH
-    , GRTHEQ
-    , LSTH
-    , LSTHEQ
-    , EQUAL
-    , NOT
-    , MOD
-    , EXP
-    , FUNCTION
-    , ASSIGN
-    , ISEITHER
-    , ISNEITHER
-    , CONCATLIST
-    , YADAYADA
-    , TRY
-    , MATCH
-    , WITH
-    , SO
-    , EXCLAMATION
-    , AS
-    , EOF
-    ]
-
 -- All possibles white spaces
 whitespaces
   = [ ' ' , '\t' , '\r' , '\n' ]
@@ -87,24 +37,20 @@ identifiers
  
 -- All operators
 operators
-  = ['+', '-', '*', '/', '^', '=', '%', '>', '<', ':', '.', ',', '|']
+  = ['+', '-', '*', '/', '^', '=', '%', '>', '<', ':', '.', ',', '|', ':']
 
 singleOperators
   = ['(', ')', '[', ']', '!', '~']
 
 -- All keywords
 keywords
-  = [ "var"
-    , "def"
-    , "end"
-    , "if"
+  = [ "if"
     , "then"
     , "else"
     , "for"
     , "in"
     , "do"
     , "null"
-    , "call"
     , "import"
     , "when"
     , "and"
@@ -114,82 +60,5 @@ keywords
     , "not"
     , "either"
     , "neither"
-    , "try"
-    , "match"
-    , "with"
-    , "so"
     , "as"
     ]
-
-
-showt = drawTokens
-
-drawTokens = intercalate " " . map reverseTokens
-
-reverseTokens e
-  = case e of
-      CONST n -> show n
-      CONSTF n -> show n
-      DECLARE -> "var"
-      IDENT n -> n
-      STRING n -> "\"" ++ n ++ "\""
-      CHAR n -> '\'' : n : '\'' : []
-      IMPORT1 -> "import"
-      IMPORT n -> "import " ++ n ++ "\n"
-      RARROW -> "->"
-      LARROW -> "<-"
-      PLUS -> "+"
-      MINUS -> "-"
-      MUL -> "*"
-      DIV -> "/"
-      GRTH -> ">"
-      GRTHEQ -> ">="
-      LSTH -> "<"
-      LSTHEQ -> "<="
-      EQUAL -> "=="
-      NOT -> "/="
-      MOD -> "%"
-      EXP -> "^"
-      AND -> "and"
-      OR -> "or"
-      TRUE -> "true"
-      FALSE -> "false"
-      ASSIGN -> "="
-      MATCH -> "match"
-      WITH -> "with"
-      SO -> "so"
-      COMMA -> ","
-      COMPOSITION -> "."
-      OPCALLFUNCTION n -> "`" ++ n ++ "`"
-      CALL1 -> "call"
-      CALLALONE n -> "call " ++ n
-      COMMENT -> "//"
-      COUNTLIST -> ".."
-      CONCATLIST -> "++"
-      OPENPAREN -> "("
-      CLOSEPAREN -> ")"
-      OPENLIST -> "["
-      CLOSELIST -> "]"
-      LAMBDA -> "~"
-      IF -> "if"
-      THEN -> "then"
-      ELSE -> "else"
-      ELSEIF -> "|"
-      ISEITHER -> "either"
-      ISNEITHER -> "neither"
-      FOR -> "for"
-      DO -> "do"
-      IN -> "in"
-      WHEN -> "when"
-      FUNCTION -> "def"
-      TAKE -> "|>"
-      LISTPATTERNMATCHING -> ":"
-      NULLSTRING -> "\"\""
-      VOIDARGUMENTS -> "()"
-      NULL -> "null"
-      YADAYADA -> "..."
-      TRY -> "try"
-      EXCLAMATION -> "!"
-      AS -> "as"
-      VOID -> "void"
-      EOF -> ";\n\n"

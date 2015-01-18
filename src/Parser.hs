@@ -73,7 +73,7 @@ howManyTimes x xs = length $ x `elemIndices` xs
 
 tokenize :: String -> Tokens
 tokenize [] = []
-tokenize ('"':'"':rest) = NULLSTRING : tokenize rest
+-- tokenize ('"':'"':rest) = NULLSTRING : tokenize rest
 
 tokenize ('"':rest)
   = let
@@ -146,17 +146,12 @@ tokenize (x:xs) | x `elem` whitespaces      = tokenize xs
                               IDENT stack
                             else
                               case stack of
-                                "var"     -> DECLARE
-                                "def"     -> FUNCTION
-                                "end"     -> EOF
                                 "if"      -> IF
                                 "then"    -> THEN
                                 "else"    -> ELSE
                                 "for"     -> FOR
                                 "in"      -> IN
                                 "do"      -> DO
-                                "null"    -> NULL
-                                "call"    -> CALL1
                                 "import"  -> IMPORT1
                                 "when"    -> WHEN
                                 "and"     -> AND
@@ -166,10 +161,6 @@ tokenize (x:xs) | x `elem` whitespaces      = tokenize xs
                                 "not"     -> NOT
                                 "either"  -> ISEITHER
                                 "neither" -> ISNEITHER
-                                "try"     -> TRY
-                                "match"   -> MATCH
-                                "with"    -> WITH
-                                "so"      -> SO
                                 "as"      -> AS ) : tokenize (d:ds)
                   
                   doSingleOperator stack ds
@@ -202,13 +193,12 @@ tokenize (x:xs) | x `elem` whitespaces      = tokenize xs
                             "^"   -> EXP
                             "->"  -> RARROW
                             "<-"  -> LARROW
-                            ":"   -> LISTPATTERNMATCHING
+                            ":"   -> COLON
                             "|"   -> ELSEIF
                             "."   -> COMPOSITION
                             ","   -> COMMA
                             "++"  -> CONCATLIST
-                            ".."  -> COUNTLIST
-                            "..." -> YADAYADA) : tokenize (d:ds)
+                            ".."  -> COUNTLIST) : tokenize (d:ds)
 
 tokenAdjustments :: Tokens -> Tokens
 tokenAdjustments [] = []
@@ -303,6 +293,13 @@ quark (OPENPAREN : xs)
         = let
             subparse stack (z, COMMA:zs) = subparse (stack ++ [z]) (parse zs)
             subparse stack (z, CLOSEPAREN:zs) = (Tuple (stack ++ [z]), zs)
+          in
+            subparse [y] (parse ys)
+
+      sub (y, COLON:ys)
+        = let
+            subparse stack (z, COLON:zs) = subparse (stack ++ [z]) (quark zs)
+            subparse stack (z, CLOSEPAREN:zs) = (Unlist (stack ++ [z]), zs)
           in
             subparse [y] (parse ys)
       in
@@ -507,8 +504,7 @@ cell tokens
             (z, zs) = cell ys
           in
             (Or x z, zs)
-
-        -- For (What to do) (x in list) (when)
+            
         (FOR : ys) ->
           let
             (ident, IN:zs) = cell ys
@@ -570,6 +566,10 @@ human tokens
               (Tuple z, ASSIGN : zs) -> (Def (Ident foo) z body, rest)
                                         where
                                           (body, rest) = cell zs
+
+              (Unlist z, ASSIGN : zs) -> (Def (Ident foo) [Unlist z] body, rest)
+                                         where
+                                           (body, rest) = cell zs
 
               _ ->
                 cell tokens

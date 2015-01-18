@@ -58,6 +58,7 @@ data Chunk = Chunk ByteString Type
            | Functionc ByteString [Ast] Ast
            | Lambdac [Ast] Ast
            | Callf [Chunk] Chunk -- for omitting arguments on a function call (Assigned Function)
+           | Decls [Chunk]
            deriving (Eq)
 
 value (Chunk bs _) = unpack bs
@@ -89,39 +90,39 @@ instance Show Type where
   show GENERIC = "Generic"
 
 instance Show Chunk where
-  show chunk@(Chunk _ t) = showChunk chunk
-  show list@(List _ t) = showChunk list
-  show tuple@(Tuplec _ t) = showChunk tuple
-  show decl@(Declaration _ _ t) = showChunk decl
-  show func@(Functionc _ _ _) = showChunk func
-  show lambda@(Lambdac _ _) = showChunk lambda
-  show callf@(Callf _ _) = showChunk callf
+  show (Chunk bs _)
+    = unpack bs
 
-showChunk (Chunk bs _) = unpack bs
+  show (List list (LIST CHAR))
+    = show $ foldr (\(Chunk bs _) acc -> (readc $ unpack bs) : acc) [] list
 
-showChunk (List list (LIST CHAR))
-  = show $ foldr (\(Chunk bs _) acc -> (readc $ unpack bs) : acc) [] list
+  show (List chunks@(Chunk _ _:_) _)
+    = let
+        elems = map (\(Chunk bs _) -> unpack bs) chunks
+      in
+        "[" ++ intercalate ", " elems ++ "]"
 
-showChunk (List chunks@(Chunk _ _:_) _)
-  = let
-      elems = map (\(Chunk bs _) -> unpack bs) chunks
-    in
-      "[" ++ intercalate ", " elems ++ "]"
+  show (List list _)
+    = "[" ++ intercalate ", " (map show list) ++ "]"
 
-showChunk (List list _)
-  = "[" ++ intercalate ", " (map showChunk list) ++ "]"
+  show (Tuplec list _)
+    = "(" ++ intercalate ", " (map show list) ++ ")"
 
-showChunk (Tuplec chunks _)
-  = "(" ++ intercalate ", " (map showChunk chunks) ++ ")"
+  show (Declaration var chunk _)
+    = show var ++ " = " ++ show chunk
 
-showChunk (Declaration var chunk _)
-  = showChunk var ++ " = " ++ showChunk chunk
+  show (Functionc fnname args _)
+    = unpack fnname ++ ", " ++ show (length args) ++ " argument(s)"
 
-showChunk (Functionc fnname args _) = unpack fnname ++ " " ++ intercalate " " (map (\(Ident x) -> x) args)
+  show (Lambdac args _)
+    = "~(" ++ intercalate " " (map (\(Ident x) -> x) args) ++ ")"
 
-showChunk (Lambdac args _) = "~(" ++ intercalate " " (map (\(Ident x) -> x) args) ++ ")"
+  show (Callf _ fn)
+    = "stacked " ++ show fn
 
-showChunk (Callf _ fn) = "stacked " ++ show fn
+  show (Decls decls)
+    = intercalate ",\n" $ map show decls
+
 
 {--------------------------
   Okay, you
@@ -309,17 +310,26 @@ evaluate stack
 
       eval (Equ a b)
         = let
-            (Chunk x xt) = eval a
-            (Chunk y yt) = eval b
+            comp (Chunk x xt) (Chunk y yt)
+              = let
+                  apply :: Type -> Type -> Chunk
+                  apply INT INT = Chunk (packShow (readi (unpack x) == readi (unpack y))) BOOL
+                  apply INT FLOAT = apply FLOAT FLOAT
+                  apply FLOAT INT = apply FLOAT FLOAT
+                  apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) == readf (unpack y))) BOOL
+                  apply BOOL BOOL = Chunk (packShow (readb (unpack x) == readb (unpack y))) BOOL
+                in
+                  apply xt yt
 
-            apply :: Type -> Type -> Chunk
-            apply INT INT = Chunk (packShow (readi (unpack x) == readi (unpack y))) BOOL
-            apply INT FLOAT = apply FLOAT FLOAT
-            apply FLOAT INT = apply FLOAT FLOAT
-            apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) == readf (unpack y))) BOOL
-            apply BOOL BOOL = Chunk (packShow (readb (unpack x) == readb (unpack y))) BOOL
+            comp (List x xt) (List y yt)
+              = if length x /= length y
+                  then
+                    Chunk (pack "False") BOOL
+                  else
+                    Chunk (packShow . and . zipWith (==) x $ y) BOOL
           in
-            apply xt yt
+            comp (eval a) (eval b)
+
 
       eval (Not a b)
         = let
@@ -383,6 +393,7 @@ evaluate stack
             getType (Ident "False") = BOOL
             getType (ComprehensionList (a:_)) = LIST $ getType a
             getType (CountList a _) = LIST $ getType a -- TOFIX
+            getType _ = LIST GENERIC
 
           in
             List (map eval xs) (getType comp)
@@ -429,6 +440,36 @@ evaluate stack
             evaluedTree = evaluate stack tree
             t = typeof evaluedTree
 
+      eval (Assign (Unlist idents) maybeAList)
+        = case literaleval maybeAList of
+            (ComprehensionList asts) ->
+              let
+                setupAll (x:[]) elems = [Assign x (ComprehensionList elems)]
+                setupAll (x:xs) (elem':elems) = Assign x elem' : setupAll xs elems
+              in
+                Decls . map (evaluate stack) $ setupAll idents asts
+
+            (Ident ast) ->
+              let
+                (List chunks t') = evaluate stack (Ident ast)
+                (LIST t) = t'
+
+                setupAll (Ident x:[]) elems = [Declaration (Chunk (pack x) t) (List elems t') t']
+                setupAll (Ident x:xs) (elem':elems) = Declaration (Chunk (pack x) t) elem' t : setupAll xs elems
+              in
+                Decls $ setupAll idents chunks
+
+            for@(For what (In (Ident n) list) Void) ->
+              let
+                (List chunks t') = evaluate stack for
+                (LIST t) = t'
+
+                setupAll (Ident x:[]) elems = [Declaration (Chunk (pack x) t) (List elems t') t']
+                setupAll (Ident x:xs) (elem':elems) = Declaration (Chunk (pack x) t) elem' t : setupAll xs elems
+              in
+                Decls $ setupAll idents chunks
+
+
       eval (Ident n) = getFromStack n stack
 
       eval (Def (Ident fnname) args body)
@@ -438,12 +479,16 @@ evaluate stack
         = case getFromStack fnname stack of
               (Functionc n args' body') -> 
                 let
-                  zipped = zipWith (\i@(Ident n) what -> Assign i what) args' args
-                  setLocals = map eval zipped
+                  zipped = zipWith (\i what -> Assign i what) args' args
+                  setLocals = checkDecls $ map eval zipped
+
+                  checkDecls [] = []
+                  checkDecls (Decls x : xs) = x ++ checkDecls xs
+                  checkDecls (x:xs) = x : checkDecls xs
 
                   inputArgsLen = length args
                   funcArgsLen = length args'
-                  omittedArgs = drop (funcArgsLen - inputArgsLen) args'
+                  omittedArgs = drop inputArgsLen args'
                 in
                   if funcArgsLen > inputArgsLen
                     then
@@ -453,9 +498,18 @@ evaluate stack
 
               (Lambdac args' body') ->
                 let
-                  setLocals = map eval $ zipWith (\i@(Ident n) what -> Assign i what) args' args
+                  zipped = zipWith (\i@(Ident n) what -> Assign i what) args' args
+                  setLocals = map eval zipped
+
+                  inputArgsLen = length args
+                  funcArgsLen = length args'
+                  omittedArgs = drop inputArgsLen args'
                 in
-                  evaluate (setLocals ++ stack) body'
+                  if funcArgsLen > inputArgsLen
+                    then
+                      evaluate stack (LambdaDef omittedArgs (DoIn zipped body'))
+                    else
+                      evaluate (setLocals ++ stack) body'
 
       eval (Call (LambdaDef lambArgs body) args)
         = let
@@ -464,13 +518,13 @@ evaluate stack
             evaluate (setLocals ++ stack) body
 
       eval (DoIn asts result)
-        = let
-            sub stack' [] = stack'
-            sub stack' (x:xs) = sub (stack' ++ [evaluate (stack' ++ stack) x]) xs
+        = evaluate (s ++ stack) result
+        where
+          s = checkDecls $ foldl (\acc x -> evaluate (acc ++ stack) x : acc) [] asts
 
-            s = sub [] asts
-          in
-            evaluate (s ++ stack) result
+          checkDecls [] = []
+          checkDecls (Decls x : xs) = x ++ checkDecls xs
+          checkDecls (x:xs) = x : checkDecls xs
 
       eval (LambdaDef args body)
         = Lambdac args body

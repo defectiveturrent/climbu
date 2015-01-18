@@ -82,9 +82,17 @@ interpret (line:_)
       let hError :: Exc.ErrorCall -> IO ()
           hError exception = putStrLn $ show exception
 
+          evaling acc x
+            = let
+                evaluated = evaluate acc x
+              in
+                case evaluated of
+                  Decls chunks -> chunks ++ acc
+                  _ -> evaluated : acc
+
       source <- readFile line
 
-      Exc.catch (animated $ foldl (\acc x -> evaluate acc x : acc) [] (parseLines $ parseTokens source)) hError
+      Exc.catch (animated $ foldl evaling [] (parseLines $ parseTokens source)) hError
       return ()
 
 version _
@@ -138,6 +146,7 @@ repl _
               let
                 new = nub $ case interpreted of
                         Chunk _ _ -> stack
+                        Decls chunks -> chunks ++ stack
                         _ -> interpreted : stack
 
               putStrLn []
@@ -154,6 +163,9 @@ standard
    , "exit() = \"I want you to stay here.\";"
    , "abs(x) = if x > 0 then x else -x;"
    , "fac(x) = if x < 2 then x else x * fac (x - 1);"
+   , "empty(l) = l == [];"
+   , "length(x:xs) = if empty xs then 1 else 1 + length xs;"
+   , "sum(x:xs) = if empty xs then x else x + sum xs;"
    ]
 
 animated [] = return ()

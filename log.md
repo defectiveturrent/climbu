@@ -1,8 +1,12 @@
 Log
 ===
 
+v1.8 (In working)
+-----------------
++ Added pattern matching with lists
+
 v1.7
------------------------
+----
 + Developed an interpreter;
 + Added a REPL;
 + Removed the C++ translator;
