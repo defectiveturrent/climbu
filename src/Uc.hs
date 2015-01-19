@@ -92,12 +92,12 @@ interpret (line:_)
 
       source <- readFile line
 
-      Exc.catch (animated $ foldl evaling [] (parseLines $ parseTokens source)) hError
+      Exc.catch (animated . reverse $ foldl evaling [] (parseLines $ parseTokens source)) hError
       return ()
 
 version _
   = do
-      putStrLn "Climbu compiler v1.7 (The seventh seal is opened) - Copyright (C) 2014 - 2015  Mario Feroldi"
+      putStrLn "Climbu compiler v1.8 (Actors) - Copyright (C) 2014 - 2015  Mario Feroldi"
       putStrLn "This program comes with ABSOLUTELY NO WARRANTY."
       putStrLn "This is free software, and you are welcome to redistribute it"
       putStrLn "under GPL v3 license.\n"
@@ -105,8 +105,8 @@ version _
 help _
   = do
       putStrLn "Usage: climbu [option] file...\n"
-      putStrLn "  -c <bin name> <file>           Compiles a Climbu code"
-      putStrLn "  -i <line>                      Interprets a line"
+      putStrLn "  -c <bin name> <file>           Compiles a code to an abstract syntax tree"
+      putStrLn "  -i <file path>                 Runs a file"
       putStrLn "  {-v --version}                 Shows version"
       putStrLn "  {-h --help}                    Shows help"
       putStrLn []
@@ -133,7 +133,7 @@ repl _
               let
                 interpreted = evaluate stack (getAst line)
 
-              Exc.catch (print interpreted) (hError stack)
+              Exc.catch (animated [interpreted]) (hError stack)
 
               let
                 new = nub $ case interpreted of
@@ -161,10 +161,6 @@ standard
    ]
 
 animated [] = return ()
-
-animated (i@(Chunk _ _):stack)
-  = do
-      putStrLn $ show i
-      animated stack
-
-animated (x:stack) = do putStrLn $ " -> " ++ show x; animated stack
+animated (ToPrint l@(List _ (LIST CHAR)):stack) = do putStrLn ((show l :: String) \\ ['"', '"']); animated stack
+animated (ToPrint x : stack) = do putStrLn $ show x; animated stack
+animated (x:stack) = do putStrLn $ show x; animated stack

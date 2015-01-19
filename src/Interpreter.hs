@@ -33,7 +33,7 @@ readString str = read str :: [Ast]
 saveBytecode :: [Ast] -> String -> IO ()
 saveBytecode bc path
   = do
-    writeFile path ("#!climbu\n" ++ show bc)
+    writeFile path ("#!climbu -i \n" ++ show bc)
 
 openBytecode :: String -> IO [Ast]
 openBytecode path
@@ -59,7 +59,7 @@ data Chunk = Chunk ByteString Type
            | Declaration Chunk Chunk Type
            | Functionc ByteString [Ast] Ast
            | Lambdac [Ast] Ast
-           | Callf [Chunk] Chunk -- for omitting arguments on a function call (Assigned Function)
+           | ToPrint Chunk
            | Decls [Chunk]
            deriving (Eq)
 
@@ -119,11 +119,11 @@ instance Show Chunk where
   show (Lambdac args _)
     = "~(" ++ intercalate " " (map (\(Ident x) -> x) args) ++ ")"
 
-  show (Callf _ fn)
-    = "stacked " ++ show fn
-
   show (Decls decls)
     = intercalate ",\n" $ map show decls
+
+  show (ToPrint chunk)
+    = show chunk
 
 
 {--------------------------
@@ -476,6 +476,9 @@ evaluate stack
 
       eval (Def (Ident fnname) args body)
         = Functionc (pack fnname) args body
+
+      eval (Call (Ident "print") [args])
+        = ToPrint (evaluate stack args)
 
       eval (Call (Ident fnname) args)
         = case getFromStack fnname stack of
