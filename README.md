@@ -78,4 +78,4 @@ Done that, let's compile the code:
 Okay, done. Now you have a executable working as well. To see commands and other stuffs, type  ``climbu --help``.
 
 ## The license
-This project is lincensed under GPLv3, so you are free to do everything (or almost everything) with my language.
+This project is lincensed under GPLv3, so you are free to do everything (or almost everything) with my language (of course, under GPL).
