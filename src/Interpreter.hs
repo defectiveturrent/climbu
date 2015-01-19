@@ -1,15 +1,3 @@
-module Interpreter where
-
-import Data.Char
-import Data.List
-import Data.Maybe
-import Ast
-import Parser
-
-import Data.ByteString (ByteString)
-import Data.ByteString.Char8 (pack, unpack)
-
-readString :: String -> [Ast]
 {-
     Climbu compiler / interpreter
     Copyright (C) 2014 - 2015 Mario Feroldi
@@ -28,6 +16,18 @@ readString :: String -> [Ast]
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+module Interpreter where
+
+import Data.Char
+import Data.List
+import Data.Maybe
+import Ast
+import Parser
+
+import Data.ByteString (ByteString)
+import Data.ByteString.Char8 (pack, unpack)
+
+readString :: String -> [Ast]
 readString str = read str :: [Ast]
 
 saveBytecode :: [Ast] -> String -> IO ()
