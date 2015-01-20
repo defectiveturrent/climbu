@@ -68,7 +68,7 @@ Okay, next step: install missingh from cabal (a package for haskell):
     $ cabal update
     $ cabal install missingh
 
-Done that, let's compile the code:
+Maybe cabal asks you to get a new version of itself. In this case, do what it wants and run that commands afterwards. Done that, let's compile the code:
 
     $ cd climbu
     $ make
