@@ -58,3 +58,4 @@ Okay, now about lambda functions: likely functions, we use tuple's syntax to dec
     (a, b) -> a + b;
 
 You can save this into a variable and use it like a function.
+
