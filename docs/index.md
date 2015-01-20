@@ -51,5 +51,29 @@ Wow! Do we just made... Declarators? Yes, we made it. It's too much complex for 
 ## The versions
 Climbu has named versions (since v1.3) where the first named version is "I'm a zygote". This is just for fun. You can find all versions in the ``versions`` file.
 
+## Compiling
+You must have these dependencies:
+
++ ``ghc``, for compiling code
++ ``cabal``, for installing packages
+
+The first step is installing the ghc and cabal in your system:
+
+    $ package-manager install ghc cabal
+
+Where package-manager is your one.
+
+Okay, next step: install missingh from cabal (a package for haskell):
+
+    $ cabal update
+    $ cabal install missingh
+
+Done that, let's compile the code:
+
+    $ cd climbu
+    $ make
+
+Okay, done. Now you have a executable working as well. To see commands and other stuffs, type  ``climbu --help``.
+
 ## The license
-This project is lincensed under GPLv3, so you are free to do everything (or almost everything) with my language.
+This project is lincensed under MIT Licence, so you are free to do everything (or almost everything) with my language.

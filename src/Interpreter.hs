@@ -429,19 +429,6 @@ evaluate stack
           in
             if readb (unpack stat') then eval right else eval wrong
 
-      eval for@(For what (In (Ident n) list) Void)
-        = let
-            checkList
-              = case list of
-                  ComprehensionList _ -> let (List content _) = eval list in content
-                  CountList _ _ -> let (List content _) = eval list in content
-                  Ident m -> let (List content _) = getFromStack m stack in content
-                  _ -> error $ "Some values are lost: " ++ show for
-
-            mapped = map (\x -> evaluate ((Declaration (Chunk (pack n) (typeof x)) x (typeof x)) : stack) what) checkList
-          in
-            List mapped (LIST . typeof . head $ mapped)
-
       eval for@(For what (In (Ident n) list) condition)
         = let
             checkList
@@ -453,8 +440,8 @@ evaluate stack
 
             varDeclaration x = (Declaration (Chunk (pack n) (typeof x)) x (typeof x)) : stack
 
-            mapped = [evaluate (varDeclaration x) what
-                     | x <- checkList, evaluate (varDeclaration x) condition == Chunk (pack "True") BOOL
+            mapped = [evaluate (varDeclaration x) what | x <- checkList
+                     , evaluate (varDeclaration x) condition == Chunk (pack "True") BOOL
                      ]
           in
             List mapped (LIST . typeof . head $ mapped)
@@ -484,7 +471,7 @@ evaluate stack
               in
                 Decls $ setupAll idents chunks
 
-            for@(For what (In (Ident n) list) Void) ->
+            for@(For what (In (Ident n) list) _) ->
               let
                 (List chunks t') = evaluate stack for
                 (LIST t) = t'

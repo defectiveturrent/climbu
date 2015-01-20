@@ -522,7 +522,7 @@ cell tokens
                   (For x (ident `In` l) (c), rs)
 
             checkCondition (l, ws)
-              = (For x (ident `In` l) (Void), ws)
+              = (For x (ident `In` l) (Ident "True"), ws)
           in
             checkCondition $ cell zs
 
