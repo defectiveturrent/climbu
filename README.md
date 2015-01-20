@@ -51,13 +51,13 @@ Wow! Do we just made... Declarators? Yes, we made it. It's too much complex for 
 It's coming yet. Not finished. However, you can see the progress here: [Climbu documentation](http://climbu.readthedocs.org/en/latest/)
 
 ## The versions
-Climbu has named versions (since v1.3) where the first named version is "I'm a zygote". This is just for fun. You can find all versions in the ``versions`` file.
+Climbu has named versions (since v1.3) where the first named version was ``"I'm a zygote"``. This is just for fun. You can find all versions in the ``versions`` file.
 
 ## Compiling
 You must have these dependencies:
 
-+ ghc, for compiling code
-+ cabal, for installing packages
++ ``ghc``, for compiling code
++ ``cabal``, for installing packages
 
 The first step is installing the ghc and cabal in your system:
 
