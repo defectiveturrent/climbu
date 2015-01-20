@@ -51,7 +51,7 @@ And using it like so:
 
     add 4 6;
 
-To declare, we use parentheses and commas (like tuples), and its name before. After that, we put the sign ``=`` (equal) and its content after. An important stuff here is that Climnu has no statements. Climbu is made of entirely expressions. So, everything returns something, even functions declaration.
+To declare, we use parentheses and commas (like tuples), and its name before. After that, we put the sign ``=`` (equal) and its content after. An important stuff here is that Climnu has no statements. Climbu is entirely made of expressions. So, everything returns something, even functions declaration.
 
 Okay, now about lambda functions: likely functions, we use tuple's syntax to declare our parameters, but instead of the sign of equal, we use a right arrow (``->``). Like so:
 
