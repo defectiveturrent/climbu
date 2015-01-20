@@ -442,6 +442,23 @@ evaluate stack
           in
             List mapped (LIST . typeof . head $ mapped)
 
+      eval for@(For what (In (Ident n) list) condition)
+        = let
+            checkList
+              = case list of
+                  ComprehensionList _ -> let (List content _) = eval list in content
+                  CountList _ _ -> let (List content _) = eval list in content
+                  Ident m -> let (List content _) = getFromStack m stack in content
+                  _ -> error $ "Some values are lost: " ++ show for
+
+            varDeclaration x = (Declaration (Chunk (pack n) (typeof x)) x (typeof x)) : stack
+
+            mapped = [evaluate (varDeclaration x) what
+                     | x <- checkList, evaluate (varDeclaration x) condition == Chunk (pack "True") BOOL
+                     ]
+          in
+            List mapped (LIST . typeof . head $ mapped)
+
       eval (Assign (Ident n) tree)
         = Declaration (Chunk (pack n) t) evaluedTree t
           where
