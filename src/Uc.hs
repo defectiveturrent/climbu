@@ -114,12 +114,14 @@ help _
       putStrLn "  {-v --version}                 Shows version"
       putStrLn "  {-h --help}                    Shows help"
       putStrLn []
-      putStrLn "Report bugs to <blueoatstudio@gmail.com>"
+      putStrLn "Report bugs to <euseinaoseithelost@gmail.com>"
 
 repl _
   = do
       version [""]
-      putStrLn "To exit, press CTRL + D\n"
+      putStrLn "\nTo exit, press CTRL + D\n"
+
+      standard <- readFile "standard" >>= \x -> return $ lines x
       let
         hError :: [Chunk] -> Exc.ErrorCall -> IO ()
         hError stack exception
@@ -154,17 +156,7 @@ repl _
       sub $ foldl (\acc x -> evaluate acc (getAst x) : acc) [] standard
 
 
-standard
- = [ "iwanttobelieve = \"HAIL OUR SAVIOR, THE FLYING SPAGHETTI MONSTER!!!\";"
-   , "exit() = \"I want you to stay here.\";"
-   , "abs(x) = if x > 0 then x else -x;"
-   , "fac(x) = if x < 2 then x else x * fac (x - 1);"
-   , "empty(l) = l == [];"
-   , "length(x:xs) = if empty xs then 1 else 1 + length xs;"
-   , "sum(x:xs) = if empty xs then x else x + sum xs;"
-   ]
-
 animated [] = return ()
-animated (ToPrint l@(List _ (LIST CHAR)):stack) = do putStrLn ((show l :: String) \\ ['"', '"']); animated stack
+animated (ToPrint l@(List _ (LIST CHAR)):stack) = do putStrLn ((show l) \\ ['"', '"']); animated stack
 animated (ToPrint x : stack) = do putStrLn $ show x; animated stack
 animated (x:stack) = do putStrLn $ show x; animated stack

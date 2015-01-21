@@ -3,7 +3,10 @@ Log
 
 v1.8 (In working)
 -----------------
-+ Added pattern matching with lists
++ Added pattern matching with lists (beta);
++ Added ``when`` to comprehension list;
++ Added some standard functions;
++ Lambdas are defined like so: ``(args) -> body``;
 
 v1.7
 ----
