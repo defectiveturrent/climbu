@@ -3,7 +3,7 @@ About lists
 Before you go to the market, you make a list of what you've to buy and etc. Lists are more or less like so. When we need a list, we should make this:
 
 ~~~haskell
-    [1, 2, 9]
+[1, 2, 9]
 ~~~
 
 Okay, we have a list of numbers now. But, what about other stuffs? I hope we'll save a lot of other stuffs too, not just numbers. So, we can!
