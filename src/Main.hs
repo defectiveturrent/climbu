@@ -109,7 +109,6 @@ version _
 help _
   = do
       putStrLn "Usage: climbu [option] file...\n"
-      putStrLn "  -c <bin name> <file>           Compiles a code to an abstract syntax tree"
       putStrLn "  -i <file path>                 Runs a file"
       putStrLn "  {-v --version}                 Shows version"
       putStrLn "  {-h --help}                    Shows help"
