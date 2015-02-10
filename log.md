@@ -7,6 +7,10 @@ v1.8 (In working)
 + Added ``when`` to comprehension list;
 + Added some standard functions;
 + Lambdas are defined like so: ``(args) -> body``;
++ Added ``not`` expression;
++ Added ``Okay`` expression for ``True``;
++ Remade some operators;
+
 
 v1.7
 ----
@@ -60,8 +64,3 @@ v1.4
 + Renamed ``let in`` to ``do in``.
 + Added new way to define functions.
 + Added mathematic syntax to numbers and variables.
-
-In working
------------
-+ Partial application; // Scratched out.
-+ Some ideas from mathematic. Using math in lists (matrix). // Scratched out.

@@ -152,8 +152,8 @@ packShow = pack . show
 literaleval (CountList (Num a) (Num b)) = ComprehensionList . map Num $ [a..b]
 literaleval (CountList (Numf a) (Numf b)) = ComprehensionList . map Numf $ [a..b]
 literaleval (CountList (CharByte a) (CharByte b)) = ComprehensionList . map CharByte $ [a..b]
-literaleval (CountList (Ident "True") (Ident "False")) = ComprehensionList [Ident "True", Ident "False"]
-literaleval (CountList (Ident "False") (Ident "True")) = ComprehensionList [Ident "False", Ident "True"]
+literaleval (CountList (Okay) (Not Okay)) = ComprehensionList [Okay, Not Okay]
+literaleval (CountList (Not Okay) (Okay)) = ComprehensionList [Not Okay, Okay]
 literaleval (CharString xs) = ComprehensionList $ map CharByte xs
 literaleval comp@(ComprehensionList xs) = comp
 literaleval x = x
@@ -189,10 +189,10 @@ evaluate stack
       eval (Num x) = Chunk (packShow x) INT
       eval (Numf x) = Chunk (packShow x) FLOAT
       eval (CharByte x) = Chunk (packShow x) CHAR
+      eval (Okay) = Chunk (packShow True) BOOL
+      eval (Not Okay) = Chunk (packShow False) BOOL
       eval (Ident "True") = Chunk (packShow True) BOOL
       eval (Ident "False") = Chunk (packShow False) BOOL
-      eval (Ident "true") = Chunk (packShow True) BOOL
-      eval (Ident "false") = Chunk (packShow False) BOOL
       eval str@(CharString _) = eval $ literaleval str
 
       eval (Negate (Num x)) = eval (Num (-x))
@@ -339,18 +339,9 @@ evaluate stack
             comp (eval a) (eval b)
 
 
-      eval (Not a b)
-        = let
-            (Chunk x xt) = eval a
-            (Chunk y yt) = eval b
+      eval (Noteq a b) = Chunk (packShow (eval (Equ a b) == Chunk (packShow False) BOOL)) BOOL
 
-            apply :: Type -> Type -> Chunk
-            apply INT INT = Chunk (packShow (readi (unpack x) /= readi (unpack y))) BOOL
-            apply INT FLOAT = apply FLOAT FLOAT
-            apply FLOAT INT = apply FLOAT FLOAT
-            apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) /= readf (unpack y))) BOOL
-          in
-            apply xt yt
+      eval (Not a) = eval (Equ a (Not Okay))
 
       eval (Mod a b)
         = let
@@ -397,8 +388,8 @@ evaluate stack
             getType (Numf _) = FLOAT
             getType (CharByte _) = CHAR
             getType (CharString _) = LIST CHAR
-            getType (Ident "True") = BOOL
-            getType (Ident "False") = BOOL
+            getType (Okay) = BOOL
+            getType (Not Okay) = BOOL
             getType (ComprehensionList (a:_)) = LIST $ getType a
             getType (CountList a _) = LIST $ getType a -- TOFIX
             getType _ = LIST GENERIC

@@ -162,8 +162,9 @@ tokenize (x:xs) | x `elem` whitespaces      = tokenize xs
                                 "when"    -> WHEN
                                 "and"     -> AND
                                 "or"      -> OR
-                                "true"    -> TRUE
-                                "false"   -> FALSE
+                                "True"    -> TRUE
+                                "Okay"    -> TRUE
+                                "False"   -> FALSE
                                 "not"     -> NOT
                                 "either"  -> ISEITHER
                                 "neither" -> ISNEITHER
@@ -190,7 +191,7 @@ tokenize (x:xs) | x `elem` whitespaces      = tokenize xs
                             "/"   -> DIV
                             "="   -> ASSIGN
                             "=="  -> EQUAL
-                            "/="  -> NOT
+                            "/="  -> NOTEQ
                             "%"   -> MOD
                             ">"   -> GRTH
                             ">="  -> GRTHEQ
@@ -204,7 +205,7 @@ tokenize (x:xs) | x `elem` whitespaces      = tokenize xs
                             "."   -> COMPOSITION
                             ","   -> COMMA
                             "++"  -> CONCATLIST
-                            ".."  -> COUNTLIST) : tokenize (d:ds)
+                            ".."  -> COUNTLIST) : tokenize (d:ds) -- TODO Maybe
 
 tokenAdjustments :: Tokens -> Tokens
 tokenAdjustments [] = []
@@ -246,10 +247,10 @@ quark (IDENT y : rest)
   = (Ident y, rest)
 
 quark (TRUE : rest)
-  = (Ident "True", rest)
+  = (Okay, rest)
 
 quark (FALSE : rest)
-  = (Ident "False", rest)
+  = (Not Okay, rest)
 
 quark (STRING str : rest)
   = (CharString str, rest)
@@ -311,7 +312,12 @@ quark (OPENPAREN : xs)
       in
         sub $ parse xs
 
---quark _ = error "Unbelievably, this abstract syntax tree is not part of my knowledge"
+quark (NOT : rest)
+  = let
+      (x, xs) = cell rest
+    in
+      (Not x, xs)
+
 quark _ = (Void, [EOF])
 
 ----------------------------
@@ -458,11 +464,11 @@ atom tokens
           in
             (Equ x z, zs)
 
-        (NOT : ys) ->
+        (NOTEQ : ys) ->
           let
             (z, zs) = atom ys
           in
-            (Not x z, zs)
+            (Noteq x z, zs)
 
         _ ->
           (x, xs)

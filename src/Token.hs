@@ -49,6 +49,7 @@ data Token
   | LSTH
   | LSTHEQ
   | EQUAL
+  | NOTEQ
   | NOT
   | MOD
   | EXP

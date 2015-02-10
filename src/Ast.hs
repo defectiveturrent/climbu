@@ -34,12 +34,14 @@ data Ast
   | Sub Ast Ast                        -- Minus AST AST
   | Mul Ast Ast                        -- Times AST AST
   | Div Ast Ast                        -- Divides AST AST
+  | Okay                               -- True
   | Grt Ast Ast                        -- Greater Than AST AST
   | Ge  Ast Ast                        -- Greater or equal AST AST
   | Let Ast Ast                        -- Less Than AST AST
   | Le  Ast Ast                        -- Less or equal AST AST
   | Equ Ast Ast                        -- Equal AST AST
-  | Not Ast Ast                        -- Not equal AST AST
+  | Noteq Ast Ast                      -- Not equal AST AST
+  | Not Ast                            -- Not
   | Mod Ast Ast                        -- Module AST AST
   | And Ast Ast                        -- Expressive and
   | Or Ast Ast                         -- Expressive or
