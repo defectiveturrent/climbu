@@ -9,3 +9,4 @@ fac(x) = if x < 2 then x else x * fac (x - 1);
 empty(l) = l == [];
 length(x:xs) = if empty xs then 1 else 1 + length xs;
 sum(x:xs) = if empty xs then x else x + sum xs;
+map(f, xs) = f x for x in xs;

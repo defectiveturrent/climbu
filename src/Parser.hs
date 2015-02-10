@@ -205,7 +205,7 @@ tokenize (x:xs) | x `elem` whitespaces      = tokenize xs
                             "."   -> COMPOSITION
                             ","   -> COMMA
                             "++"  -> CONCATLIST
-                            ".."  -> COUNTLIST) : tokenize (d:ds) -- TODO Maybe
+                            ".."  -> COUNTLIST) : tokenize (d:ds)
 
 tokenAdjustments :: Tokens -> Tokens
 tokenAdjustments [] = []
