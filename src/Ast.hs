@@ -68,6 +68,9 @@ data Ast
   | Unlist [Ast]                       -- A list's pattern matching operator (:) ( [Head] Tail )
   | Negate Ast                         --
   | AsCast Ast Ast                     --
+  | Some Ast                           -- Simulates the Haskell's Maybe
+  | None                               -- Same above
+  | Unwrap Ast                         -- Unwrap an Option
   | Void                               -- Used to stuff something empty
   | Eof                                -- used to end a complete expression
   deriving (Show, Read, Eq)

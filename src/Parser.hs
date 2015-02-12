@@ -168,7 +168,9 @@ tokenize (x:xs) | x `elem` whitespaces      = tokenize xs
                                 "not"     -> NOT
                                 "either"  -> ISEITHER
                                 "neither" -> ISNEITHER
-                                "as"      -> AS ) : tokenize (d:ds)
+                                "as"      -> AS
+                                "Some"    -> SOME
+                                "None"    -> NONE ) : tokenize (d:ds)
                   
                   doSingleOperator stack ds
                     = (case stack of
@@ -205,7 +207,8 @@ tokenize (x:xs) | x `elem` whitespaces      = tokenize xs
                             "."   -> COMPOSITION
                             ","   -> COMMA
                             "++"  -> CONCATLIST
-                            ".."  -> COUNTLIST) : tokenize (d:ds)
+                            ".."  -> COUNTLIST
+                            "~"   -> UNWRAP ) : tokenize (d:ds)
 
 tokenAdjustments :: Tokens -> Tokens
 tokenAdjustments [] = []
@@ -318,6 +321,21 @@ quark (NOT : rest)
     in
       (Not x, xs)
 
+quark (SOME : rest)
+  = let
+      (x, xs) = quark rest
+    in
+      (Some x, xs)
+
+quark (NONE : rest)
+  = (None, rest)
+
+quark (UNWRAP : rest)
+  = let
+      (x, xs) = cell rest
+    in
+      (Unwrap x, xs)
+
 quark _ = (Void, [EOF])
 
 ----------------------------
@@ -334,6 +352,7 @@ electron (MINUS : tokens)
 
 electron tokens@(IDENT y : ys)
   = let
+      fold :: Tokens -> Tokens -> ([Ast], Tokens)
       fold stack [] = (stack, [])
       fold stack tokens
         = let

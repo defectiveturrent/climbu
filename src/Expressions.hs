@@ -43,10 +43,10 @@ identifiers
  
 -- All operators
 operators
-  = ['+', '-', '*', '/', '^', '=', '%', '>', '<', ':', '.', ',', '|', ':']
+  = ['+', '-', '*', '/', '^', '=', '%', '>', '<', ':', '.', ',', '|', ':', '~']
 
 singleOperators
-  = ['(', ')', '[', ']', '!', '~']
+  = ['(', ')', '[', ']', '!']
 
 -- All keywords
 keywords
@@ -68,4 +68,6 @@ keywords
     , "either"
     , "neither"
     , "as"
+    , "Some"
+    , "None"
     ]

@@ -93,7 +93,9 @@ data Token
   | VOIDARGUMENTS
   | NULL
   | YADAYADA
-  | TRY
+  | SOME
+  | NONE
+  | UNWRAP
   | VOID
   | EOF  -- End of line
   deriving (Show, Read, Eq)

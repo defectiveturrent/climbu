@@ -57,6 +57,7 @@ data Type
   | FUNCTION
   | LAMBDA
   | GENERIC
+  | OPTION Type
   deriving(Eq, Read)
 
 data Chunk = Chunk ByteString Type
@@ -66,6 +67,8 @@ data Chunk = Chunk ByteString Type
            | Functionc ByteString [Ast] Ast
            | Lambdac [Ast] Ast
            | ToPrint Chunk
+           | Somec Chunk Type
+           | Nonec Type
            | Decls [Chunk]
            deriving (Eq)
 
@@ -80,6 +83,8 @@ typeof (Tuplec _ t) = t
 typeof (Declaration _ _ t) = t
 typeof (Functionc _ _ _) = FUNCTION
 typeof (Lambdac _ _) = LAMBDA
+typeof (Somec _ t) = t
+typeof (Nonec t) = t
 
 {--------------------------
   Don't look here,
@@ -96,6 +101,7 @@ instance Show Type where
   show FUNCTION = "Function"
   show LAMBDA = "Lambda"
   show GENERIC = "Generic"
+  show (OPTION t) = "Option " ++ show t
 
 instance Show Chunk where
   show (Chunk bs _)
@@ -130,6 +136,12 @@ instance Show Chunk where
 
   show (ToPrint chunk)
     = show chunk
+
+  show (Somec chunk _)
+    = "Some " ++ show chunk
+
+  show (Nonec _)
+    = "None"
 
 
 {--------------------------
@@ -198,6 +210,19 @@ evaluate stack
       eval (Negate (Num x)) = eval (Num (-x))
       eval (Negate (Numf x)) = eval (Numf (-x))
       eval (Negate x) = eval (Sub (Num 0) x)
+
+      eval (Some x)
+        = let
+            e = evaluate stack x
+          in
+            Somec e (OPTION $ typeof e)
+
+      eval (None) = Nonec (OPTION GENERIC)
+
+      eval (Unwrap x)
+        = case evaluate stack x of
+            Somec e _ -> e
+            _ -> Nonec (OPTION GENERIC)
 
       eval (Add a b)
         = let
@@ -332,9 +357,19 @@ evaluate stack
             comp (List x xt) (List y yt)
               = if length x /= length y
                   then
-                    Chunk (pack "False") BOOL
+                    Chunk (packShow False) BOOL
                   else
                     Chunk (packShow . and . zipWith (==) x $ y) BOOL
+
+            comp (Somec x _) (Somec y _)
+              = comp x y
+
+            comp (Nonec _) (Nonec _)
+              = Chunk (packShow True) BOOL
+
+            comp _ _
+              = Chunk (packShow False) BOOL
+
           in
             comp (eval a) (eval b)
 

@@ -9,8 +9,13 @@ v1.8 (In working)
 + Lambdas are defined like so: ``(args) -> body``;
 + Added ``not`` expression;
 + Added ``Okay`` expression for ``True``;
++ Added an ``Option`` expression;
+  - ``Some`` for box something;
+  - ``None`` for nothing;
+  - ``~`` for unwrapping ``Option``s;
+  - ``match`` for handling ``Option``s
 + Remade some operators;
-
++ Some minor fixes;
 
 v1.7
 ----
