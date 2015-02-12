@@ -77,5 +77,9 @@ Maybe cabal asks you to get a new version of itself. In this case, do what it wa
 
 Okay, done. Now you have a executable working as well. To see commands and other stuffs, type  ``climbu --help``.
 
+## Stuffs
++ See the log [here](https://github.com/thelostt/climbu/blob/master/log.md).
++ See the doc [here](http://climbu.readthedocs.org/en/latest/).
+
 ## The license
 This project is lincensed under MIT Licence, so you are free to do everything (or almost everything) with my language.
