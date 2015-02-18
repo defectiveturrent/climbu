@@ -352,7 +352,7 @@ electron (MINUS : tokens)
 
 electron tokens@(IDENT y : ys)
   = let
-      fold :: Tokens -> Tokens -> ([Ast], Tokens)
+      fold :: [Ast] -> Tokens -> ([Ast], Tokens)
       fold stack [] = (stack, [])
       fold stack tokens
         = let
