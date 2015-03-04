@@ -225,17 +225,16 @@ evaluate stack
             _ -> Nonec (OPTION GENERIC)
 
       eval (Add a b)
-        = let
-            (Chunk x xt) = eval a
-            (Chunk y yt) = eval b
-
-            apply :: Type -> Type -> Chunk
-            apply INT INT = Chunk (packShow (readi (unpack x) + readi (unpack y))) INT
-            apply INT FLOAT = apply FLOAT FLOAT
-            apply FLOAT INT = apply FLOAT FLOAT
-            apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) + readf (unpack y))) FLOAT
-          in
-            apply xt yt
+        = case (eval a, eval b) of
+            (Chunk x xt, Chunk y yt) ->
+              let
+                apply :: Type -> Type -> Chunk
+                apply INT INT = Chunk (packShow (readi (unpack x) + readi (unpack y))) INT
+                apply INT FLOAT = apply FLOAT FLOAT
+                apply FLOAT INT = apply FLOAT FLOAT
+                apply FLOAT FLOAT = Chunk (packShow (readf (unpack x) + readf (unpack y))) FLOAT
+              in
+                apply xt yt
 
       eval (Sub a b)
         = let
