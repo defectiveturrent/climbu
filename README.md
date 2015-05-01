@@ -1,11 +1,11 @@
 Climbu
 =======
 ## What is this?
-Good question. Climbu is a programming language, which is focusing in the result, not in speed or something else. So you can (you should) use Climbu just for testing mathematics formules, testing algorithms and other cool stuffs.
+Good question. Climbu is a programming language, which is focusing in the result, not in speed or something else. So you can (you should) use Climbu just for testing mathematics formules, testing algorithms and other cool stuff.
 
-Climbu is interpreted (and maybe it's fast, I don't know). Climbu is a super side effect, imperative programming language, but it can be just functional programming language, you choose your form.
+Climbu is interpreted (and maybe it's fast, I don't know). Climbu is a super side-effect, imperative programming language, but it can be just functional programming language, you choose your form.
 
-Well, when I say 'super side effect', I actually mean this:
+Well, when I say 'super side-effect', I actually mean this:
 
 ```haskell
     foo(a, b) = a + b;
@@ -17,7 +17,7 @@ Well, when I say 'super side effect', I actually mean this:
     in x + foo;
 ```
 
-Yeap, this prints ``5``. Okay, until now, this isn't too side effect, is it? Yeah, is not. But check it out:
+Yeap, this prints ``5``. Okay, until now, this isn't too side-effective, is it? No. But check it out:
 
 ```haskell
     foo(x) = x 2;
@@ -45,7 +45,7 @@ Okay, okay, not too side effect... And now, it comes hard:
      in (x, y) -- prints (8, 2)
 ```
 
-Wow! Do we just made... Declarators? Yes, we made it. It's too much complex for explainations here. Go to the doc and check it out!
+Wow! Do we just made... Declarators? Yes, we made it. It's too much complex for explainations here. Go to the doc and check it out! (I'm lying. The documment is not done.)
 
 ## Documentation?
 It's coming yet. Not finished. However, you can see the progress here: [Climbu documentation](http://climbu.readthedocs.org/en/latest/)
