@@ -77,7 +77,7 @@ Maybe cabal asks you to get a new version of itself. In this case, do what it wa
 
 Okay, done. Now you have an executable working as well. To see commands and other stuff, type  ``climbu --help``.
 
-### Stuffs
+### Stuff
 + See the log [here](https://github.com/thelostt/climbu/blob/master/log.md).
 + See the doc [here](http://climbu.readthedocs.org/en/latest/).
 
