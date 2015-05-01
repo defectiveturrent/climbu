@@ -75,7 +75,7 @@ Maybe cabal asks you to get a new version of itself. In this case, do what it wa
     $ cd climbu
     $ make
 
-Okay, done. Now you have an executable working as well. To see commands and other stuffs, type  ``climbu --help``.
+Okay, done. Now you have an executable working as well. To see commands and other stuff, type  ``climbu --help``.
 
 ### Stuffs
 + See the log [here](https://github.com/thelostt/climbu/blob/master/log.md).
