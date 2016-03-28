@@ -1,49 +1,7 @@
 Climbu
 =======
 ## What is this?
-Good question. Climbu is a programming language, which is focusing in the result, not in speed or something else.
-
-Climbu is interpreted (and maybe it's fast, I don't know). Climbu mixes both imperative and functional programming language, but it can be just FP, you choose your way.
-
-Examples:
-
-Prints `5`:
-
-```haskell
-    foo(a, b) = a + b;
-
-    bar = foo 1;
-
-    do x = bar 2,
-       foo = 2
-    in x + foo;
-```
-
-Another example:
-
-```haskell
-    foo(f) = f 2;
-
-    bar(x) = x + 2;
-
-    foo (do bar(id) = id in bar); -- returns 2
-
-    foo bar; -- returns 4
-
-    bar = 8; -- bar now is 8
-```
-
-```haskell
-    foo1 = foo(x) = x + x;
-    foo2 = foo(x) = x / 2;
-
-    do foo1,
-       x = foo 4,
-       foo2,
-       y = foo 4
-
-     in (x, y) -- prints (8, 2)
-```
+My first attempt at making a compiler.
 
 ## Documentation?
 It's not done yet. However, you can see the progress [here](http://climbu.readthedocs.org/en/latest/).
